@@ -1,0 +1,200 @@
+import Head from 'next/head';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { client, urlFor } from '../lib/sanity';
+
+export default function Affiliate({ affiliateProducts }) {
+  // Categories for filtering
+  const categories = [
+    { id: 'all', name: 'All Products' },
+    { id: 'insurance', name: 'Travel Insurance' },
+    { id: 'gear', name: 'Travel Gear' },
+    { id: 'accommodation', name: 'Accommodation' },
+    { id: 'transportation', name: 'Transportation' },
+    { id: 'other', name: 'Other' }
+  ];
+
+  const [activeCategory, setActiveCategory] = useState('all');
+
+  // Filter products based on selected category
+  const filteredProducts = activeCategory === 'all'
+    ? affiliateProducts
+    : affiliateProducts.filter(product => product.category === activeCategory);
+
+  return (
+    <>
+      <Head>
+        <title>Travel Partner Products | JarongMedia</title>
+        <meta name="description" content="Discover our trusted travel partners and exclusive deals on essential travel services and products." />
+      </Head>
+
+      {/* Hero Section */}
+      <section className="relative pt-24 pb-16 bg-blue-900">
+        <div className="absolute inset-0 z-0 opacity-30">
+          <div className="w-full h-full bg-[url('/images/affiliate/affiliate-hero.jpg')] bg-cover bg-center"></div>
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-900/80 to-blue-900/90 z-0"></div>
+        
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-3xl">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Travel Partner Products
+            </h1>
+            <p className="text-xl text-white/90 mb-8">
+              We've partnered with trusted travel brands to bring you exclusive deals on essential travel services and products
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Categories Filter */}
+      <section className="py-8 bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-wrap justify-center gap-2">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                className={`px-6 py-2 rounded-full transition-all ${
+                  activeCategory === category.id
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                onClick={() => setActiveCategory(category.id)}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Products Grid */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredProducts.map((product, index) => (
+              <motion.div
+                key={product._id}
+                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <div className="relative">
+                  <div 
+                    className="w-full h-56 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${product.image ? urlFor(product.image) : '/images/placeholder.jpg'})` }}
+                  ></div>
+                  {product.discount && (
+                    <div className="absolute top-4 right-4 bg-red-500 text-white py-1 px-3 rounded-full font-semibold">
+                      {product.discount}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <h2 className="text-xl font-bold text-gray-900">{product.title}</h2>
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                      <span>{product.rating || '4.5'}</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-gray-600 mb-6">{product.description}</p>
+                  
+                  <a 
+                    href={product.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full bg-amber-500 hover:bg-amber-600 text-white text-center py-3 rounded-md transition-colors"
+                  >
+                    View Deal
+                  </a>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-12">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">No products found</h3>
+              <p className="text-gray-600">Please try a different category or check back later.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Become a Partner */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto bg-blue-50 rounded-xl p-8 md:p-12">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Become an Affiliate Partner</h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Join our affiliate program to promote your travel-related products or services to our audience. 
+                Get access to our growing customer base and increase your sales.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="text-blue-600 text-2xl font-bold mb-2">1</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Sign Up</h3>
+                <p className="text-gray-600">Complete our simple application form to join the affiliate program</p>
+              </div>
+              
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="text-blue-600 text-2xl font-bold mb-2">2</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Get Approved</h3>
+                <p className="text-gray-600">Our team will review your application and provide quick approval</p>
+              </div>
+              
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="text-blue-600 text-2xl font-bold mb-2">3</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Start Earning</h3>
+                <p className="text-gray-600">Begin promoting your products and earning commissions</p>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <Link 
+                href="/contact"
+                className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all inline-block"
+              >
+                Apply to Become a Partner
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+export async function getStaticProps() {
+  // Fetch affiliate products from Sanity
+  const affiliateProducts = await client.fetch(`
+    *[_type == "affiliateProduct"] | order(publishedAt desc) {
+      _id,
+      title,
+      description,
+      image,
+      category,
+      url,
+      rating,
+      discount
+    }
+  `);
+
+  return {
+    props: {
+      affiliateProducts: affiliateProducts || []
+    },
+    revalidate: 600 // Revalidate every 10 minutes
+  };
+}
