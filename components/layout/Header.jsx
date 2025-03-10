@@ -1,4 +1,3 @@
-// Header.jsx - Fixed Link components
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 

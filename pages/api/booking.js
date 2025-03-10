@@ -8,60 +8,47 @@ export default async function handler(req, res) {
   try {
     const formData = req.body;
     
-    // Format transportation details if needed
-    let transportationDetails = null;
+    // Create booking request document in Sanity
+    const doc = {
+      _type: 'bookingRequest',
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      bookingType: formData.bookingType,
+      travelDates: {
+        from: formData.departureDate || formData.checkIn,
+        to: formData.returnDate || formData.checkOut
+      },
+      travelers: {
+        adults: parseInt(formData.adults || formData.guests || '1'),
+        children: parseInt(formData.children || '0'),
+        infants: parseInt(formData.infants || '0')
+      },
+      transportationNeeded: formData.needCab || false,
+      specialRequests: formData.specialRequests || '',
+      status: 'new',
+      submittedAt: new Date().toISOString()
+    };
+    
+    // Add transportation details if needed
     if (formData.needCab) {
-      transportationDetails = {
+      doc.transportationDetails = {
         pickupLocation: formData.pickupLocation || '',
         destination: formData.cabDestination || '',
-        pickupDate: formData.cabDate || formData.pickupDateTime?.split('T')[0] || '',
-        pickupTime: formData.cabTime || (formData.pickupDateTime?.split('T')[1] || '').slice(0, 5) || '',
+        pickupDate: formData.cabDate || formData.departureDate || formData.checkIn || '',
+        pickupTime: formData.cabTime || '',
         vehicleType: formData.vehicleType || '',
         notes: formData.transportNotes || ''
       };
     }
-
-    // Create booking request document in Sanity
-    const bookingDoc = {
-      _type: 'bookingRequest',
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone || '',
-      bookingType: formData.bookingType || 'package',
-      travelDates: {
-        from: formData.departureDate || formData.checkIn || new Date().toISOString().split('T')[0],
-        to: formData.returnDate || formData.checkOut || ''
-      },
-      travelers: {
-        adults: parseInt(formData.adults || formData.guests || formData.passengers || '1', 10),
-        children: parseInt(formData.children || '0', 10),
-        infants: parseInt(formData.infants || '0', 10)
-      },
-      transportationNeeded: formData.needCab || false,
-      transportationDetails: transportationDetails,
-      specialRequests: formData.specialRequests || formData.message || '',
-      status: 'new',
-      submittedAt: new Date().toISOString()
-    };
-
-    // If this booking is for a specific package, add reference
-    if (formData.packageId) {
-      bookingDoc.packageReference = {
-        _type: 'reference',
-        _ref: formData.packageId
-      };
-    }
-
-    // Create document in Sanity
-    const result = await client.create(bookingDoc);
-
-    return res.status(200).json({
-      success: true,
-      message: 'Booking request submitted successfully',
-      bookingId: result._id
-    });
+    
+    // Save to Sanity
+    await client.create(doc);
+    
+    // Send response
+    return res.status(200).json({ message: 'Booking request submitted successfully' });
   } catch (error) {
-    console.error('Error submitting booking:', error);
-    return res.status(500).json({ success: false, message: 'Error submitting booking request' });
+    console.error('Error processing booking:', error);
+    return res.status(500).json({ message: 'Error submitting booking request' });
   }
 }

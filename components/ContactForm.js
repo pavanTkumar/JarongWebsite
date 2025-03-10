@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 
 const ContactForm = () => {
   // Contact form state
@@ -37,9 +36,8 @@ const ContactForm = () => {
         body: JSON.stringify(formData),
       });
       
-      const data = await response.json();
-      
-      if (data.success) {
+      // Check if response is ok (status code 200-299)
+      if (response.ok) {
         setIsSubmitted(true);
         // Reset form
         setFormData({
@@ -55,7 +53,8 @@ const ContactForm = () => {
           setIsSubmitted(false);
         }, 5000);
       } else {
-        setError('There was an error submitting your message. Please try again.');
+        const errorData = await response.json();
+        setError(errorData.message || 'There was an error submitting your message. Please try again.');
       }
     } catch (error) {
       console.error('Error submitting contact form:', error);
@@ -166,7 +165,7 @@ const ContactForm = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all transform hover:scale-105 ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+              className={`px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
             >
               {isSubmitting ? 'Sending...' : 'Send Message'}
             </button>

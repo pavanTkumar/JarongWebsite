@@ -2,26 +2,15 @@ import Head from 'next/head';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { client, urlFor } from '../lib/sanity';
+import { client } from '../lib/sanity';
 
 export default function GambiaApartment({ apartmentData }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   
-  // Gallery images - use Sanity images if available, otherwise fallback to static
-  const galleryImages = apartmentData?.galleryImages?.length > 0 
-    ? apartmentData.galleryImages.map(img => urlFor(img))
-    : [
-        '/images/apartment/gambia-apt-1.jpg',
-        '/images/apartment/gambia-apt-2.jpg',
-        '/images/apartment/gambia-apt-3.jpg',
-        '/images/apartment/gambia-apt-4.jpg',
-        '/images/apartment/gambia-apt-5.jpg',
-      ];
-  
-  // Amenities
-  const amenities = apartmentData?.amenities || [
+  // Prepare default amenities if none found in Sanity
+  const defaultAmenities = [
     { icon: '🛏️', name: '3 Bedrooms' },
     { icon: '🚿', name: '2 Bathrooms' },
     { icon: '👥', name: 'Sleeps up to 6' },
@@ -35,6 +24,27 @@ export default function GambiaApartment({ apartmentData }) {
     { icon: '🏞️', name: 'Sea View' },
     { icon: '🛋️', name: 'Living Room' },
   ];
+  
+  // Format amenities for display
+  const amenities = apartmentData?.amenities 
+    ? apartmentData.amenities.map(amenity => ({ icon: '✓', name: amenity }))
+    : defaultAmenities;
+  
+  // Prepare gallery images
+  const mainImage = apartmentData?.mainImage 
+    ? getImageUrl(apartmentData.mainImage) 
+    : '/images/apartment/gambia-hero.jpg';
+  
+  // Process gallery images
+  const galleryImages = apartmentData?.galleryImages?.length > 0
+    ? apartmentData.galleryImages.map(img => getImageUrl(img))
+    : [
+        '/images/apartment/gambia-apt-1.jpg',
+        '/images/apartment/gambia-apt-2.jpg',
+        '/images/apartment/gambia-apt-3.jpg',
+        '/images/apartment/gambia-apt-4.jpg',
+        '/images/apartment/gambia-apt-5.jpg',
+      ];
 
   // Handle booking form
   const [formData, setFormData] = useState({
@@ -74,9 +84,7 @@ export default function GambiaApartment({ apartmentData }) {
         body: JSON.stringify(formData),
       });
       
-      const data = await response.json();
-      
-      if (data.success) {
+      if (response.ok) {
         setIsSubmitted(true);
         // Reset form
         setFormData({
@@ -105,6 +113,27 @@ export default function GambiaApartment({ apartmentData }) {
     setIsSubmitting(false);
   };
 
+  // Function to safely get image URL from Sanity
+  function getImageUrl(imageObj) {
+    if (!imageObj || !imageObj.asset) return '/images/placeholder.jpg';
+    
+    try {
+      if (imageObj.asset._ref) {
+        const ref = imageObj.asset._ref;
+        const [, id, dimensions, extension] = ref.split('-');
+        let format = extension;
+        if (format === 'jpg') format = 'jpeg';
+        
+        return `https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'jq3x5bz4'}/production/${id}-${dimensions}.${format}`;
+      }
+      
+      return '/images/placeholder.jpg';
+    } catch (error) {
+      console.error('Error formatting image URL:', error);
+      return '/images/placeholder.jpg';
+    }
+  }
+
   return (
     <>
       <Head>
@@ -115,14 +144,7 @@ export default function GambiaApartment({ apartmentData }) {
       {/* Hero Section */}
       <section className="relative pt-24 pb-16 bg-blue-900">
         <div className="absolute inset-0 z-0 opacity-30">
-          <div 
-            className="w-full h-full bg-cover bg-center"
-            style={{ 
-              backgroundImage: apartmentData?.mainImage 
-                ? `url(${urlFor(apartmentData.mainImage)})` 
-                : "url('/images/apartment/gambia-hero.jpg')" 
-            }}
-          ></div>
+          <div className="w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${mainImage})` }}></div>
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/80 to-blue-900/90 z-0"></div>
         
@@ -157,7 +179,7 @@ export default function GambiaApartment({ apartmentData }) {
             <div className="rounded-xl overflow-hidden h-[400px] shadow-lg">
               <div 
                 className="w-full h-full bg-cover bg-center transition-all duration-500"
-                style={{ backgroundImage: `url(${galleryImages[selectedImage] || '/images/placeholder.jpg'})` }}
+                style={{ backgroundImage: `url(${galleryImages[selectedImage]})` }}
               ></div>
             </div>
             
@@ -267,7 +289,7 @@ export default function GambiaApartment({ apartmentData }) {
               </Link>
             </div>
             <div className="w-full md:w-1/2 rounded-xl overflow-hidden h-[400px] shadow-lg">
-              {/* Location map image or Google Map */}
+              {/* Location map image */}
               <div 
                 className="w-full h-full bg-cover bg-center"
                 style={{ backgroundImage: "url('/images/apartment/gambia-map.jpg')" }}
@@ -430,12 +452,12 @@ export default function GambiaApartment({ apartmentData }) {
                         </div>
                         <div>
                           <label className="block text-gray-700 text-sm font-medium mb-2">
-                            Pickup Date & Time
+                            Pickup Date
                           </label>
                           <input
-                            type="datetime-local"
-                            name="pickupDateTime"
-                            value={formData.pickupDateTime}
+                            type="date"
+                            name="cabDate"
+                            value={formData.cabDate}
                             onChange={handleChange}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
@@ -488,10 +510,9 @@ export default function GambiaApartment({ apartmentData }) {
   );
 }
 
-// Fetch apartment data from Sanity
 export async function getStaticProps() {
-  // Fetch the apartment data
   try {
+    // Fetch the apartment data
     const apartmentData = await client.fetch(`
       *[_type == "apartment" && featured == true][0] {
         _id,
@@ -505,8 +526,7 @@ export async function getStaticProps() {
         bathrooms,
         maxGuests,
         amenities,
-        location,
-        houseRules
+        location
       }
     `);
     
