@@ -1,8 +1,25 @@
+// pages/affiliate.js
 import Head from 'next/head';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { client, urlFor } from '../lib/sanity';
+import { client } from '../lib/sanity';
+
+function getSanityImageUrl(source) {
+    if (!source || !source.asset) return '/images/placeholder.jpg';
+    try {
+      const ref = source.asset._ref || source.asset._id || '';
+      const [_file, id, dimensions, extension] = ref.split('-');
+      let format = extension;
+      if (format === 'jpg') format = 'jpeg';
+      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'jq3x5bz4';
+      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}-${dimensions}.${format}`;
+    } catch (error) {
+      console.error('Error with image URL:', error);
+      return '/images/placeholder.jpg';
+    }
+  }
 
 export default function Affiliate({ affiliateProducts }) {
   // Categories for filtering
@@ -21,6 +38,44 @@ export default function Affiliate({ affiliateProducts }) {
   const filteredProducts = activeCategory === 'all'
     ? affiliateProducts
     : affiliateProducts.filter(product => product.category === activeCategory);
+
+  // Fallback products if none are found in Sanity or filtered category
+  const fallbackProducts = [
+    {
+      _id: 'fallback-1',
+      title: 'Premium Travel Insurance',
+      description: 'Comprehensive travel insurance with COVID-19 coverage for peace of mind during your journey.',
+      image: '/images/affiliate/insurance.jpg',
+      category: 'insurance',
+      url: '#',
+      rating: 4.8,
+      discount: '15% OFF'
+    },
+    {
+      _id: 'fallback-2',
+      title: 'Noise-Cancelling Headphones',
+      description: 'Get the ultimate travel experience with these premium noise-cancelling headphones, perfect for long flights.',
+      image: '/images/affiliate/headphones.jpg',
+      category: 'gear',
+      url: '#',
+      rating: 4.9,
+      discount: '20% OFF'
+    },
+    {
+      _id: 'fallback-3',
+      title: 'Exclusive Hotel Discounts',
+      description: 'Access special rates at premium hotels worldwide, exclusively for JarongMedia customers.',
+      image: '/images/affiliate/hotel.jpg',
+      category: 'accommodation',
+      url: '#',
+      rating: 4.7,
+      discount: 'Up to 30% OFF'
+    }
+  ];
+
+  // Display products or fallbacks if none found
+  const displayProducts = filteredProducts.length > 0 ? filteredProducts : 
+    (activeCategory === 'all' ? fallbackProducts : fallbackProducts.filter(p => p.category === activeCategory));
 
   return (
     <>
@@ -73,7 +128,7 @@ export default function Affiliate({ affiliateProducts }) {
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProducts.map((product, index) => (
+            {displayProducts.map((product, index) => (
               <motion.div
                 key={product._id}
                 className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all"
@@ -85,7 +140,9 @@ export default function Affiliate({ affiliateProducts }) {
                 <div className="relative">
                   <div 
                     className="w-full h-56 bg-cover bg-center"
-                    style={{ backgroundImage: `url(${product.image ? urlFor(product.image) : '/images/placeholder.jpg'})` }}
+                    style={{ backgroundImage: `url(${product.image ? 
+                      (typeof product.image === 'string' ? product.image : getSanityImageUrl(product.image)) 
+                      : '/images/placeholder.jpg'})` }}
                   ></div>
                   {product.discount && (
                     <div className="absolute top-4 right-4 bg-red-500 text-white py-1 px-3 rounded-full font-semibold">
@@ -108,7 +165,7 @@ export default function Affiliate({ affiliateProducts }) {
                   <p className="text-gray-600 mb-6">{product.description}</p>
                   
                   <a 
-                    href={product.url}
+                    href={product.url || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full bg-amber-500 hover:bg-amber-600 text-white text-center py-3 rounded-md transition-colors"
@@ -120,7 +177,7 @@ export default function Affiliate({ affiliateProducts }) {
             ))}
           </div>
 
-          {filteredProducts.length === 0 && (
+          {displayProducts.length === 0 && (
             <div className="text-center py-12">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">No products found</h3>
               <p className="text-gray-600">Please try a different category or check back later.</p>
@@ -178,23 +235,34 @@ export default function Affiliate({ affiliateProducts }) {
 
 export async function getStaticProps() {
   // Fetch affiliate products from Sanity
-  const affiliateProducts = await client.fetch(`
-    *[_type == "affiliateProduct"] | order(publishedAt desc) {
-      _id,
-      title,
-      description,
-      image,
-      category,
-      url,
-      rating,
-      discount
-    }
-  `);
+  try {
+    const affiliateProducts = await client.fetch(`
+      *[_type == "affiliateProduct"] | order(publishedAt desc) {
+        _id,
+        title,
+        description,
+        image,
+        category,
+        url,
+        rating,
+        discount
+      }
+    `);
 
-  return {
-    props: {
-      affiliateProducts: affiliateProducts || []
-    },
-    revalidate: 600 // Revalidate every 10 minutes
-  };
+    return {
+      props: {
+        affiliateProducts: affiliateProducts || []
+      },
+      revalidate: 600 // Revalidate every 10 minutes
+    };
+  } catch (error) {
+    console.error('Error fetching affiliate products:', error);
+    
+    return {
+      props: {
+        affiliateProducts: []
+      },
+      revalidate: 600
+    };
+  }
 }

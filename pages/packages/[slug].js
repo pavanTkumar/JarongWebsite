@@ -1,9 +1,83 @@
+// pages/packages/[slug].js
 import Head from 'next/head';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { client, urlFor } from '../../lib/sanity';
+import { client } from '../../lib/sanity';
 import Link from 'next/link';
+import { getSanityImageUrl, getGalleryImageUrls } from '../../lib/imageUtils';
 
 export default function PackageDetail({ packageData }) {
+  const [formData, setFormData] = useState({
+    formType: 'package',
+    name: '',
+    email: '',
+    phone: '',
+    travelers: '',
+    travelDate: '',
+    needTransportation: false,
+    message: ''
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      // Add package info to the form data
+      const bookingData = {
+        ...formData,
+        packageTitle: packageData.title,
+        packageId: packageData._id,
+        packagePrice: packageData.price,
+      };
+      
+      const response = await fetch('/api/submit-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(bookingData),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsSubmitted(true);
+        // Reset form
+        setFormData({
+          formType: 'package',
+          name: '',
+          email: '',
+          phone: '',
+          travelers: '',
+          travelDate: '',
+          needTransportation: false,
+          message: ''
+        });
+      } else {
+        setError(data.message || 'There was an error submitting your booking request. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      setError('There was an error submitting your booking request. Please try again.');
+    }
+    
+    setIsSubmitting(false);
+  };
+
   if (!packageData) {
     return (
       <div className="container mx-auto px-6 py-24 text-center">
@@ -19,6 +93,10 @@ export default function PackageDetail({ packageData }) {
     );
   }
 
+  // Prepare image URLs
+  const mainImage = packageData.mainImage ? getSanityImageUrl(packageData.mainImage) : '/images/placeholder.jpg';
+  const galleryImages = packageData.galleryImages ? getGalleryImageUrls(packageData.galleryImages) : [];
+
   return (
     <>
       <Head>
@@ -31,7 +109,7 @@ export default function PackageDetail({ packageData }) {
         <div className="absolute inset-0 z-0 opacity-40">
           <div 
             className="w-full h-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${packageData.mainImage ? urlFor(packageData.mainImage) : '/images/placeholder.jpg'})` }}
+            style={{ backgroundImage: `url(${mainImage})` }}
           ></div>
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/80 to-blue-900/90 z-0"></div>
@@ -81,15 +159,15 @@ export default function PackageDetail({ packageData }) {
             {/* Main Content */}
             <div className="lg:col-span-2">
               {/* Gallery */}
-              {packageData.galleryImages && packageData.galleryImages.length > 0 && (
+              {galleryImages.length > 0 && (
                 <div className="mb-12">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Gallery</h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {packageData.galleryImages.map((image, index) => (
+                    {galleryImages.map((image, index) => (
                       <div key={index} className="rounded-lg overflow-hidden h-48">
                         <div 
                           className="w-full h-full bg-cover bg-center"
-                          style={{ backgroundImage: `url(${urlFor(image)})` }}
+                          style={{ backgroundImage: `url(${image})` }}
                         ></div>
                       </div>
                     ))}
@@ -154,79 +232,140 @@ export default function PackageDetail({ packageData }) {
             <div className="lg:col-span-1">
               <div className="bg-gray-50 p-6 rounded-xl shadow-lg sticky top-24">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Book This Package</h2>
-                <form className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Your Name
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="John Doe"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="+1 234 567 8900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Number of Travelers
-                    </label>
-                    <select
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select</option>
-                      <option value="1">1 Person</option>
-                      <option value="2">2 People</option>
-                      <option value="3">3 People</option>
-                      <option value="4">4 People</option>
-                      <option value="5+">5+ People</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 text-sm font-medium mb-2">
-                      Travel Date
-                    </label>
-                    <input
-                      type="date"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="form-checkbox h-5 w-5 text-blue-500 rounded"
-                      />
-                      <span className="text-gray-700">I need transportation assistance</span>
-                    </label>
-                  </div>
-                  <div>
+                {isSubmitted ? (
+                  <div className="bg-green-50 p-6 rounded-xl text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 mx-auto mb-4">
+                      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Booking Request Sent!</h3>
+                    <p className="text-gray-600 mb-4">
+                      Thank you for your interest in this package. We'll contact you shortly to confirm availability and details.
+                    </p>
                     <button
-                      type="submit"
-                      className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                      onClick={() => setIsSubmitted(false)}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
                     >
-                      Request Booking
+                      Make Another Booking
                     </button>
                   </div>
-                </form>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+                        {error}
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                        Your Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        placeholder="John Doe"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                        Email <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                        Phone <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        placeholder="+1 234 567 8900"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                        Number of Travelers <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="travelers"
+                        value={formData.travelers}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select</option>
+                        <option value="1">1 Person</option>
+                        <option value="2">2 People</option>
+                        <option value="3">3 People</option>
+                        <option value="4">4 People</option>
+                        <option value="5+">5+ People</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                        Travel Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        name="travelDate"
+                        value={formData.travelDate}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="needTransportation"
+                          checked={formData.needTransportation}
+                          onChange={handleChange}
+                          className="form-checkbox h-5 w-5 text-blue-500 rounded"
+                        />
+                        <span className="text-gray-700">I need transportation assistance</span>
+                      </label>
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 text-sm font-medium mb-2">
+                        Special Requests
+                      </label>
+                      <textarea
+                        name="message"
+                        value={formData.message}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-32"
+                        placeholder="Any special requests or questions..."
+                      ></textarea>
+                    </div>
+                    <div>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className={`w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                      >
+                        {isSubmitting ? 'Processing...' : 'Request Booking'}
+                      </button>
+                    </div>
+                  </form>
+                )}
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <h3 className="text-lg font-bold text-gray-900 mb-2">Need Help?</h3>
                   <p className="text-gray-600 mb-4">Contact us for any questions about this package</p>
@@ -248,10 +387,14 @@ export default function PackageDetail({ packageData }) {
 
       {/* Similar Packages */}
       <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Similar Packages</h2>
-          
-          {/* Add similar packages here - These would be fetched from Sanity in the getStaticProps function */}
+        <div className="container mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">Similar Packages</h2>
+          <Link 
+            href="/packages"
+            className="inline-block px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all transform hover:scale-105 mt-4"
+          >
+            View All Travel Packages
+          </Link>
         </div>
       </section>
     </>
@@ -259,53 +402,73 @@ export default function PackageDetail({ packageData }) {
 }
 
 export async function getStaticProps({ params }) {
-  // Fetch the specific package data
-  const packageData = await client.fetch(`
-    *[_type == "travelPackage" && slug.current == $slug][0] {
-      _id,
-      title,
-      slug,
-      mainImage,
-      galleryImages,
-      description,
-      price,
-      duration,
-      location,
-      inclusions,
-      exclusions,
-      itinerary,
-      rating
-    }
-  `, { slug: params.slug });
+  try {
+    // Fetch the specific package data
+    const packageData = await client.fetch(`
+      *[_type == "travelPackage" && slug.current == $slug][0] {
+        _id,
+        title,
+        slug,
+        mainImage,
+        galleryImages,
+        description,
+        price,
+        duration,
+        location,
+        inclusions,
+        exclusions,
+        itinerary,
+        rating
+      }
+    `, { slug: params.slug });
 
-  if (!packageData) {
+    if (!packageData) {
+      return {
+        notFound: true
+      };
+    }
+
     return {
-      notFound: true
+      props: {
+        packageData
+      },
+      revalidate: 600 // Revalidate every 10 minutes
+    };
+  } catch (error) {
+    console.error('Error fetching package data:', error);
+    
+    return {
+      props: {
+        packageData: null
+      },
+      revalidate: 600
     };
   }
-
-  return {
-    props: {
-      packageData
-    },
-    revalidate: 600 // Revalidate every 10 minutes
-  };
 }
 
 export async function getStaticPaths() {
-  // Get all package slugs
-  const packages = await client.fetch(`
-    *[_type == "travelPackage"] {
-      "slug": slug.current
-    }
-  `);
+  try {
+    // Get all package slugs
+    const packages = await client.fetch(`
+      *[_type == "travelPackage"] {
+        "slug": slug.current
+      }
+    `);
 
-  const paths = packages.map((pkg) => ({
-    params: { slug: pkg.slug }
-  }));
+    const paths = packages.map((pkg) => ({
+      params: { slug: pkg.slug }
+    }));
 
-  return {
-    paths,
-    fallback: 'blocking' // Show a loading state
-  };
+    return {
+      paths,
+      fallback: 'blocking' // Show a loading state
+    };
+  } catch (error) {
+    console.error('Error fetching package slugs:', error);
+    
+    return {
+      paths: [],
+      fallback: 'blocking'
+    };
+  }
 }

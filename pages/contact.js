@@ -1,3 +1,4 @@
+// pages/contact.js
 import Head from 'next/head';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
@@ -5,6 +6,7 @@ import { motion } from 'framer-motion';
 export default function Contact() {
   // Contact form state
   const [formData, setFormData] = useState({
+    formType: 'contact', // Identify form type for the submission handler
     name: '',
     email: '',
     phone: '',
@@ -12,7 +14,9 @@ export default function Contact() {
     message: ''
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,25 +26,48 @@ export default function Contact() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // In a real implementation, you would handle form submission here
-    console.log(formData);
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+    setError('');
     
-    // Reset form after submission
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: ''
-    });
+    try {
+      // Use our centralized form submission handler
+      const response = await fetch('/api/submit-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsSubmitted(true);
+        // Reset form after submission
+        setFormData({
+          formType: 'contact',
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+        
+        // Reset submission status after 5 seconds
+        setTimeout(() => {
+          setIsSubmitted(false);
+        }, 5000);
+      } else {
+        setError(data.message || 'There was an error submitting your message. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      setError('There was an error submitting your message. Please try again.');
+    }
     
-    // Reset submission status after 5 seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
-    }, 5000);
+    setIsSubmitting(false);
   };
 
   return (
@@ -186,6 +213,12 @@ export default function Contact() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+                      {error}
+                    </div>
+                  )}
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-gray-700 text-sm font-medium mb-2">
@@ -264,9 +297,10 @@ export default function Contact() {
                   <div>
                     <button
                       type="submit"
-                      className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all transform hover:scale-105"
+                      disabled={isSubmitting}
+                      className={`px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                     >
-                      Send Message
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
                     </button>
                   </div>
                 </form>

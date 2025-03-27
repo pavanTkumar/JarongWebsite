@@ -1,13 +1,27 @@
+// components/sections/FeaturedDestinations.jsx
 import { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-// Remove this incorrect import
-// import { urlFor } from '../lib/sanity';
-
+// Include the function directly in the component temporarily
+function getSanityImageUrl(source) {
+    if (!source || !source.asset) return '/images/placeholder.jpg';
+    try {
+      const ref = source.asset._ref || source.asset._id || '';
+      const [_file, id, dimensions, extension] = ref.split('-');
+      let format = extension;
+      if (format === 'jpg') format = 'jpeg';
+      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'jq3x5bz4';
+      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}-${dimensions}.${format}`;
+    } catch (error) {
+      console.error('Error with image URL:', error);
+      return '/images/placeholder.jpg';
+    }
+  }
 const FeaturedDestinations = ({ packages = [] }) => {
-  // Use the original hardcoded data approach which was working
-  const destinations = [
+  // Fallback data if no packages are provided from Sanity
+  const fallbackDestinations = [
     {
       id: 1,
       title: 'Gambia Beach Resort',
@@ -39,6 +53,21 @@ const FeaturedDestinations = ({ packages = [] }) => {
       slug: 'moroccan-adventure'
     }
   ];
+
+  // If Sanity packages exist, format them for display
+  // Otherwise use fallback destinations
+  const destinations = packages && packages.length > 0 
+    ? packages.map(pkg => ({
+        id: pkg._id,
+        title: pkg.title,
+        location: pkg.location,
+        image: pkg.mainImage ? getSanityImageUrl(pkg.mainImage) : '/images/placeholder.jpg',
+        price: pkg.price,
+        duration: pkg.duration,
+        rating: pkg.rating || 4.8,
+        slug: pkg.slug?.current || pkg._id
+      }))
+    : fallbackDestinations;
 
   return (
     <section className="py-20 bg-gray-50">

@@ -1,9 +1,114 @@
+// pages/packages/index.js
 import Head from 'next/head';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { client, urlFor } from '../../lib/sanity';
+import { client } from '../../lib/sanity';
+
+function getSanityImageUrl(source) {
+    if (!source || !source.asset) return '/images/placeholder.jpg';
+    try {
+      const ref = source.asset._ref || source.asset._id || '';
+      const [_file, id, dimensions, extension] = ref.split('-');
+      let format = extension;
+      if (format === 'jpg') format = 'jpeg';
+      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'jq3x5bz4';
+      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}-${dimensions}.${format}`;
+    } catch (error) {
+      console.error('Error with image URL:', error);
+      return '/images/placeholder.jpg';
+    }
+  }
 
 export default function TravelPackages({ packages }) {
+  const [filteredPackages, setFilteredPackages] = useState([]);
+  const [filters, setFilters] = useState({
+    destination: '',
+    duration: '',
+    sort: ''
+  });
+
+  // Initialize filtered packages with all packages
+  useEffect(() => {
+    if (packages && packages.length > 0) {
+      setFilteredPackages(packages);
+    }
+  }, [packages]);
+
+  // Apply filters when they change
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Update filter state
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Apply all filters
+    let result = [...packages];
+    
+    // Apply destination filter
+    if (filters.destination && name !== 'destination' || value && name === 'destination') {
+      const destinationValue = name === 'destination' ? value : filters.destination;
+      if (destinationValue !== '') {
+        result = result.filter(pkg => {
+          const location = pkg.location ? pkg.location.toLowerCase() : '';
+          return location.includes(destinationValue.toLowerCase());
+        });
+      }
+    }
+    
+    // Apply duration filter
+    if (filters.duration && name !== 'duration' || value && name === 'duration') {
+      const durationValue = name === 'duration' ? value : filters.duration;
+      if (durationValue !== '') {
+        result = result.filter(pkg => {
+          const days = parseInt(pkg.duration) || 0;
+          switch(durationValue) {
+            case 'short':
+              return days >= 1 && days <= 5;
+            case 'medium':
+              return days >= 6 && days <= 10;
+            case 'long':
+              return days >= 11;
+            default:
+              return true;
+          }
+        });
+      }
+    }
+    
+    // Apply sorting
+    if (filters.sort && name !== 'sort' || value && name === 'sort') {
+      const sortValue = name === 'sort' ? value : filters.sort;
+      switch(sortValue) {
+        case 'price-low':
+          result.sort((a, b) => (a.price || 0) - (b.price || 0));
+          break;
+        case 'price-high':
+          result.sort((a, b) => (b.price || 0) - (a.price || 0));
+          break;
+        case 'duration':
+          result.sort((a, b) => {
+            const aDuration = parseInt(a.duration) || 0;
+            const bDuration = parseInt(b.duration) || 0;
+            return bDuration - aDuration;
+          });
+          break;
+        case 'popularity':
+          result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          break;
+        default:
+          // No sorting
+          break;
+      }
+    }
+    
+    setFilteredPackages(result);
+  };
+
   return (
     <>
       <Head>
@@ -13,7 +118,6 @@ export default function TravelPackages({ packages }) {
 
       {/* Hero Section */}
       <section className="relative py-24 bg-blue-900">
-        {/* Hero content - unchanged */}
         <div className="absolute inset-0 z-0 opacity-30">
           <div className="w-full h-full bg-[url('/images/packages-hero.jpg')] bg-cover bg-center"></div>
         </div>
@@ -31,33 +135,49 @@ export default function TravelPackages({ packages }) {
         </div>
       </section>
 
-      {/* Filter and Sort Section - unchanged */}
-      <section className="py-8 bg-gray-100 border-b border-gray-200">
+      {/* Filter and Sort Section */}
+      <section className="py-8 bg-gray-100 border-b border-gray-200 sticky top-0 z-20">
         <div className="container mx-auto px-6">
           <div className="flex flex-wrap items-center justify-between">
             <div className="w-full md:w-auto mb-4 md:mb-0">
               <h2 className="text-xl font-semibold text-gray-800">
-                {packages.length} Travel Packages Available
+                {filteredPackages.length} Travel Packages Available
               </h2>
             </div>
             
             <div className="flex flex-wrap gap-4">
-              <select className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select 
+                name="destination" 
+                value={filters.destination}
+                onChange={handleFilterChange}
+                className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="">Destination</option>
                 <option value="africa">Africa</option>
+                <option value="gambia">Gambia</option>
                 <option value="asia">Asia</option>
                 <option value="europe">Europe</option>
                 <option value="americas">Americas</option>
               </select>
               
-              <select className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select 
+                name="duration" 
+                value={filters.duration}
+                onChange={handleFilterChange}
+                className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="">Duration</option>
                 <option value="short">1-5 Days</option>
                 <option value="medium">6-10 Days</option>
                 <option value="long">11+ Days</option>
               </select>
               
-              <select className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select 
+                name="sort" 
+                value={filters.sort}
+                onChange={handleFilterChange}
+                className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="">Sort By</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
@@ -73,7 +193,7 @@ export default function TravelPackages({ packages }) {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {packages.map((pkg, index) => (
+            {filteredPackages.map((pkg, index) => (
               <motion.div
                 key={pkg._id}
                 className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all group"
@@ -85,7 +205,7 @@ export default function TravelPackages({ packages }) {
                 <div className="relative h-64 overflow-hidden">
                   <div
                     className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                    style={{ backgroundImage: `url(${pkg.mainImage ? urlFor(pkg.mainImage) : '/images/placeholder.jpg'})` }}
+                    style={{ backgroundImage: `url(${pkg.mainImage ? getSanityImageUrl(pkg.mainImage) : '/images/placeholder.jpg'})` }}
                   ></div>
                   <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm py-1 px-3 rounded-full text-sm font-medium text-blue-600">
                     {pkg.duration}
@@ -130,10 +250,10 @@ export default function TravelPackages({ packages }) {
             ))}
           </div>
 
-          {packages.length === 0 && (
+          {filteredPackages.length === 0 && (
             <div className="text-center py-12">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">No packages found</h3>
-              <p className="text-gray-600">We're currently updating our offerings. Please check back soon.</p>
+              <p className="text-gray-600">We're currently updating our offerings. Please check back soon or try different filter options.</p>
             </div>
           )}
         </div>
@@ -168,24 +288,35 @@ export default function TravelPackages({ packages }) {
 
 export async function getStaticProps() {
   // Fetch all travel packages from Sanity
-  const packages = await client.fetch(`
-    *[_type == "travelPackage"] | order(publishedAt desc) {
-      _id,
-      title,
-      slug,
-      mainImage,
-      description,
-      price,
-      duration,
-      location,
-      rating
-    }
-  `);
+  try {
+    const packages = await client.fetch(`
+      *[_type == "travelPackage"] | order(publishedAt desc) {
+        _id,
+        title,
+        slug,
+        mainImage,
+        description,
+        price,
+        duration,
+        location,
+        rating
+      }
+    `);
 
-  return {
-    props: {
-      packages: packages || []
-    },
-    revalidate: 600 // Revalidate every 10 minutes
-  };
+    return {
+      props: {
+        packages: packages || []
+      },
+      revalidate: 600 // Revalidate every 10 minutes
+    };
+  } catch (error) {
+    console.error('Error fetching travel packages:', error);
+    
+    return {
+      props: {
+        packages: []
+      },
+      revalidate: 600
+    };
+  }
 }

@@ -1,13 +1,44 @@
+// pages/gambia-apartment.js
 import Head from 'next/head';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { client } from '../lib/sanity';
 
+// Embedded image utility functions
+function getSanityImageUrl(source) {
+  if (!source || !source.asset) return '/images/placeholder.jpg';
+  try {
+    const ref = source.asset._ref || source.asset._id || '';
+    const [_file, id, dimensions, extension] = ref.split('-');
+    let format = extension;
+    if (format === 'jpg') format = 'jpeg';
+    const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'jq3x5bz4';
+    const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+    return `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}-${dimensions}.${format}`;
+  } catch (error) {
+    console.error('Error with image URL:', error);
+    return '/images/placeholder.jpg';
+  }
+}
+
+function getGalleryImageUrls(imageArray) {
+  if (!imageArray || !Array.isArray(imageArray) || imageArray.length === 0) {
+    return [
+      '/images/placeholder.jpg',
+      '/images/placeholder-2.jpg',
+      '/images/placeholder-3.jpg',
+    ];
+  }
+  
+  return imageArray.map(img => getSanityImageUrl(img));
+}
+
 export default function GambiaApartment({ apartmentData }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
   
   // Prepare default amenities if none found in Sanity
   const defaultAmenities = [
@@ -26,18 +57,18 @@ export default function GambiaApartment({ apartmentData }) {
   ];
   
   // Format amenities for display
-  const amenities = apartmentData?.amenities 
+  const amenities = apartmentData?.amenities?.length > 0
     ? apartmentData.amenities.map(amenity => ({ icon: '✓', name: amenity }))
     : defaultAmenities;
   
-  // Prepare gallery images
+  // Prepare gallery images using our enhanced image utilities
   const mainImage = apartmentData?.mainImage 
-    ? getImageUrl(apartmentData.mainImage) 
+    ? getSanityImageUrl(apartmentData.mainImage) 
     : '/images/apartment/gambia-hero.jpg';
   
-  // Process gallery images
+  // Process gallery images with fallbacks
   const galleryImages = apartmentData?.galleryImages?.length > 0
-    ? apartmentData.galleryImages.map(img => getImageUrl(img))
+    ? getGalleryImageUrls(apartmentData.galleryImages)
     : [
         '/images/apartment/gambia-apt-1.jpg',
         '/images/apartment/gambia-apt-2.jpg',
@@ -48,6 +79,7 @@ export default function GambiaApartment({ apartmentData }) {
 
   // Handle booking form
   const [formData, setFormData] = useState({
+    formType: 'apartment', // Add form type for routing
     name: '',
     email: '',
     phone: '',
@@ -74,9 +106,11 @@ export default function GambiaApartment({ apartmentData }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
     
     try {
-      const response = await fetch('/api/booking', {
+      // Use our centralized form handler
+      const response = await fetch('/api/submit-form', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -84,10 +118,13 @@ export default function GambiaApartment({ apartmentData }) {
         body: JSON.stringify(formData),
       });
       
-      if (response.ok) {
+      const data = await response.json();
+      
+      if (data.success) {
         setIsSubmitted(true);
         // Reset form
         setFormData({
+          formType: 'apartment',
           name: '',
           email: '',
           phone: '',
@@ -103,36 +140,15 @@ export default function GambiaApartment({ apartmentData }) {
           bookingType: 'apartment'
         });
       } else {
-        alert('There was an error submitting your booking request. Please try again.');
+        setError(data.message || 'There was an error submitting your booking request. Please try again.');
       }
     } catch (error) {
       console.error('Error submitting booking:', error);
-      alert('There was an error submitting your booking request. Please try again.');
+      setError('There was an error submitting your booking request. Please try again.');
     }
     
     setIsSubmitting(false);
   };
-
-  // Function to safely get image URL from Sanity
-  function getImageUrl(imageObj) {
-    if (!imageObj || !imageObj.asset) return '/images/placeholder.jpg';
-    
-    try {
-      if (imageObj.asset._ref) {
-        const ref = imageObj.asset._ref;
-        const [, id, dimensions, extension] = ref.split('-');
-        let format = extension;
-        if (format === 'jpg') format = 'jpeg';
-        
-        return `https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'jq3x5bz4'}/production/${id}-${dimensions}.${format}`;
-      }
-      
-      return '/images/placeholder.jpg';
-    } catch (error) {
-      console.error('Error formatting image URL:', error);
-      return '/images/placeholder.jpg';
-    }
-  }
 
   return (
     <>
@@ -326,6 +342,12 @@ export default function GambiaApartment({ apartmentData }) {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+                      {error}
+                    </div>
+                  )}
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-gray-700 text-sm font-medium mb-2">
