@@ -11,6 +11,8 @@ export default async function handler(req, res) {
     const formData = req.body;
     const formType = formData.formType || 'general'; // Identify form type
     
+    console.log(`Processing ${formType} form submission`);
+    
     // Save data to Sanity based on form type
     let sanityDoc = {};
     let sanityResult;
@@ -37,29 +39,38 @@ export default async function handler(req, res) {
           phone: formData.phone,
           bookingType: formData.bookingType,
           travelDates: {
-            from: formData.departureDate || formData.checkIn || '',
+            from: formData.departureDate || formData.checkIn || formData.travelDate || '',
             to: formData.returnDate || formData.checkOut || ''
           },
           travelers: {
-            adults: parseInt(formData.adults || formData.guests || '1'),
+            adults: parseInt(formData.adults || formData.guests || formData.travelers || '1'),
             children: parseInt(formData.children || '0'),
             infants: parseInt(formData.infants || '0')
           },
-          transportationNeeded: formData.needCab || false,
-          specialRequests: formData.specialRequests || '',
+          transportationNeeded: formData.needTransportation || formData.needCab || false,
+          specialRequests: formData.specialRequests || formData.message || '',
           status: 'new',
           submittedAt: new Date().toISOString()
         };
         
         // Add transportation details if needed
-        if (formData.needCab) {
+        if (formData.needTransportation || formData.needCab) {
           sanityDoc.transportationDetails = {
             pickupLocation: formData.pickupLocation || '',
-            destination: formData.cabDestination || '',
+            destination: formData.cabDestination || formData.to || '',
             pickupDate: formData.cabDate || formData.departureDate || formData.checkIn || '',
             pickupTime: formData.cabTime || '',
             vehicleType: formData.vehicleType || '',
             notes: formData.transportNotes || ''
+          };
+        }
+        
+        // Add package details if it's a package booking
+        if (formData.bookingType === 'package' && formData.packageId) {
+          sanityDoc.packageDetails = {
+            packageId: formData.packageId,
+            packageTitle: formData.packageTitle || '',
+            packagePrice: formData.packagePrice || 0
           };
         }
         break;
@@ -102,7 +113,10 @@ export default async function handler(req, res) {
         sanityDoc = {
           _type: 'newsletter',
           email: formData.email,
-          submittedAt: new Date().toISOString()
+          source: formData.source || 'website',
+          status: 'active',
+          submittedAt: new Date().toISOString(),
+          lastModified: new Date().toISOString()
         };
         break;
         
@@ -133,7 +147,7 @@ export default async function handler(req, res) {
       };
       
       // Call email API
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/send-email`, {
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')}/api/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,10 +155,16 @@ export default async function handler(req, res) {
         body: JSON.stringify(emailData),
       });
       
-      const emailResult = await emailResponse.json();
-      
-      if (!emailResult.success) {
-        console.warn('Email notification failed:', emailResult.message);
+      if (emailResponse.ok) {
+        const emailResult = await emailResponse.json();
+        
+        if (!emailResult.success) {
+          console.warn('Email notification failed:', emailResult.message);
+        } else {
+          console.log('Email notification sent');
+        }
+      } else {
+        console.warn('Email API returned error status:', emailResponse.status);
       }
     } catch (emailError) {
       console.error('Email sending error:', emailError);

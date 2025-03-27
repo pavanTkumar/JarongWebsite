@@ -11,7 +11,10 @@ const Footer = () => {
   const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
     
-    if (!email) return;
+    if (!email || !email.includes('@')) {
+      setSubscribeStatus('error');
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -23,7 +26,8 @@ const Footer = () => {
         },
         body: JSON.stringify({
           formType: 'newsletter',
-          email: email
+          email: email,
+          source: 'footer'
         }),
       });
       

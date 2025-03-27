@@ -89,34 +89,39 @@ export default async function handler(req, res) {
         };
     }
 
-    // Send email to admin
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"JarongMedia" <info@jarongmedia.com>',
-      to: process.env.EMAIL_TO || 'admin@jarongmedia.com',
-      subject: adminSubject,
-      html: emailContent.adminEmail,
-    });
-
-    // Send confirmation email to user if email is provided
-    if (data.email) {
+    try {
+      // Send email to admin
       await transporter.sendMail({
         from: process.env.EMAIL_FROM || '"JarongMedia" <info@jarongmedia.com>',
-        to: data.email,
-        subject: userSubject,
-        html: emailContent.userEmail,
+        to: process.env.EMAIL_TO || 'admin@jarongmedia.com',
+        subject: adminSubject,
+        html: emailContent.adminEmail,
       });
+
+      // Send confirmation email to user if email is provided
+      if (data.email) {
+        await transporter.sendMail({
+          from: process.env.EMAIL_FROM || '"JarongMedia" <info@jarongmedia.com>',
+          to: data.email,
+          subject: userSubject,
+          html: emailContent.userEmail,
+        });
+      }
+    } catch (mailError) {
+      console.error('Error sending email:', mailError);
+      // Continue even if email sending fails - we'll still have the data in Sanity
     }
 
     // Return success
     return res.status(200).json({ 
       success: true, 
-      message: 'Email sent successfully' 
+      message: 'Form submitted successfully' 
     });
   } catch (error) {
-    console.error('Email sending error:', error);
+    console.error('Email processing error:', error);
     return res.status(500).json({ 
       success: false, 
-      message: 'Error sending email. Please try again.' 
+      message: 'Error processing form submission. Please try again.' 
     });
   }
 }
@@ -167,23 +172,30 @@ function generateAdminBookingEmail(data) {
       <p><strong>Rooms:</strong> ${data.rooms}</p>
       <p><strong>Guests:</strong> ${data.guests}</p>
     `;
+  } else if (data.bookingType === 'package') {
+    details = `
+      <p><strong>Package:</strong> ${data.packageTitle || 'Custom Package'}</p>
+      <p><strong>Travel Date:</strong> ${data.travelDate}</p>
+      <p><strong>Travelers:</strong> ${data.travelers}</p>
+      <p><strong>Price:</strong> ${data.packagePrice || 'Custom'}</p>
+    `;
   }
   
   let transportationDetails = '';
-  if (data.needCab) {
+  if (data.needTransportation || data.needCab) {
     transportationDetails = `
       <h3>Transportation Details:</h3>
       <p><strong>Pickup Location:</strong> ${data.pickupLocation || 'Not specified'}</p>
       <p><strong>Destination:</strong> ${data.cabDestination || 'Not specified'}</p>
-      <p><strong>Pickup Date:</strong> ${data.cabDate || 'Not specified'}</p>
-      <p><strong>Pickup Time:</strong> ${data.cabTime || 'Not specified'}</p>
+      <p><strong>Pickup Date:</strong> ${data.cabDate || data.transportDate || data.departureDate || data.checkIn || 'Not specified'}</p>
+      <p><strong>Pickup Time:</strong> ${data.cabTime || data.transportTime || 'Not specified'}</p>
       <p><strong>Vehicle Type:</strong> ${data.vehicleType || 'Not specified'}</p>
       <p><strong>Additional Notes:</strong> ${data.transportNotes || 'None'}</p>
     `;
   }
   
   return `
-    <h2>New ${data.bookingType.charAt(0).toUpperCase() + data.bookingType.slice(1)} Booking Request</h2>
+    <h2>New ${data.bookingType ? data.bookingType.charAt(0).toUpperCase() + data.bookingType.slice(1) : 'Travel'} Booking Request</h2>
     <p><strong>Name:</strong> ${data.name}</p>
     <p><strong>Email:</strong> ${data.email}</p>
     <p><strong>Phone:</strong> ${data.phone || 'Not provided'}</p>
@@ -191,7 +203,7 @@ function generateAdminBookingEmail(data) {
     <h3>Booking Details:</h3>
     ${details}
     
-    <p><strong>Special Requests:</strong> ${data.specialRequests || 'None'}</p>
+    <p><strong>Special Requests:</strong> ${data.specialRequests || data.message || 'None'}</p>
     
     ${transportationDetails}
     
@@ -218,15 +230,21 @@ function generateUserBookingEmail(data) {
       <p><strong>Rooms:</strong> ${data.rooms}</p>
       <p><strong>Guests:</strong> ${data.guests}</p>
     `;
+  } else if (data.bookingType === 'package') {
+    details = `
+      <p><strong>Package:</strong> ${data.packageTitle || 'Custom Package'}</p>
+      <p><strong>Travel Date:</strong> ${data.travelDate}</p>
+      <p><strong>Travelers:</strong> ${data.travelers}</p>
+    `;
   }
   
-  let transportationInfo = data.needCab ? 
+  let transportationInfo = (data.needTransportation || data.needCab) ? 
     '<p>We\'ve noted your request for transportation assistance and will include this in our planning.</p>' : '';
   
   return `
     <h2>Your Booking Request Has Been Received</h2>
     <p>Dear ${data.name},</p>
-    <p>Thank you for choosing JarongMedia for your travel needs. We have received your ${data.bookingType} booking request and our team is working to process it.</p>
+    <p>Thank you for choosing JarongMedia for your travel needs. We have received your ${data.bookingType || 'travel'} booking request and our team is working to process it.</p>
     
     <h3>Your Booking Details:</h3>
     ${details}
@@ -294,6 +312,7 @@ function generateAdminNewsletterEmail(data) {
   return `
     <h2>New Newsletter Subscription</h2>
     <p><strong>Email:</strong> ${data.email}</p>
+    <p><strong>Source:</strong> ${data.source || 'Website'}</p>
     <p><em>Subscribed on: ${new Date().toLocaleString()}</em></p>
   `;
 }

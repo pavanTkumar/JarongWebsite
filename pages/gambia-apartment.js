@@ -1,5 +1,6 @@
+// pages/gambia-apartment.js
 import Head from 'next/head';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { client } from '../lib/sanity';
@@ -12,13 +13,19 @@ export default function GambiaApartment({ apartmentData }) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
   
-  // For console debugging
-  console.log('Apartment data received:', apartmentData);
+  useEffect(() => {
+    console.log("Apartment data in component:", apartmentData);
+  }, [apartmentData]);
+  
+  // For debugging
+  if (!apartmentData || Object.keys(apartmentData).length === 0) {
+    console.error("No apartment data available");
+  }
   
   // Prepare amenities using our utility function
   const amenities = processAmenities(apartmentData?.amenities);
   
-  // Properly handle images from Sanity with appropriate fallbacks only if needed
+  // Properly handle images from Sanity with appropriate fallbacks
   const mainImage = apartmentData?.mainImage 
     ? getSanityImageUrl(apartmentData.mainImage) 
     : '/images/placeholder.jpg';
@@ -28,10 +35,13 @@ export default function GambiaApartment({ apartmentData }) {
   
   if (apartmentData?.galleryImages && apartmentData.galleryImages.length > 0) {
     // Use actual gallery images from Sanity
-    galleryImages = apartmentData.galleryImages.map(img => getSanityImageUrl(img));
+    galleryImages = getGalleryImageUrls(apartmentData.galleryImages);
+    if (galleryImages.length === 0) {
+      galleryImages = [mainImage]; // Fall back to main image if gallery processing failed
+    }
   } else if (apartmentData?.mainImage) {
     // If no gallery but has main image, use that
-    galleryImages = [getSanityImageUrl(apartmentData.mainImage)];
+    galleryImages = [mainImage];
   } else {
     // Only use placeholder as absolute last resort
     galleryImages = ['/images/placeholder.jpg'];
@@ -118,6 +128,7 @@ export default function GambiaApartment({ apartmentData }) {
   const bathroomCount = apartmentData?.bathrooms || 2;
   const guestCount = apartmentData?.maxGuests || 6;
   const pricePerNight = apartmentData?.pricePerNight || 150;
+  const location = apartmentData?.location?.city || 'Gambia';
 
   return (
     <>
@@ -156,7 +167,7 @@ export default function GambiaApartment({ apartmentData }) {
         <div className="container mx-auto px-6">
           <div className="mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Apartment Gallery</h2>
-            <p className="text-gray-600">Browse through images of our beautiful {apartmentData?.location?.city || 'Gambia'} apartment</p>
+            <p className="text-gray-600">Browse through images of our beautiful {location} apartment</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -213,7 +224,7 @@ export default function GambiaApartment({ apartmentData }) {
           <div className="mb-12 text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Apartment Amenities</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Our {apartmentData?.location?.city || 'Gambia'} apartment comes fully equipped with everything you need for a comfortable and luxurious stay
+              Our {location} apartment comes fully equipped with everything you need for a comfortable and luxurious stay
             </p>
           </div>
           
@@ -243,7 +254,7 @@ export default function GambiaApartment({ apartmentData }) {
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Excellent Location</h2>
               <p className="text-gray-600 mb-4">
                 {apartmentData?.location?.description || 
-                 `Our apartment is ideally situated in ${apartmentData?.location?.city || 'Gambia'}, 
+                 `Our apartment is ideally situated in ${location}, 
                   offering both privacy and convenient access to local attractions.`}
               </p>
               <ul className="space-y-3 mb-6">
@@ -308,7 +319,7 @@ export default function GambiaApartment({ apartmentData }) {
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Booking Request Sent!</h3>
                   <p className="text-gray-600 mb-4">
-                    Thank you for your interest in our {apartmentData?.location?.city || 'Gambia'} apartment. We've received your booking request and will get back to you shortly to confirm availability.
+                    Thank you for your interest in our {location} apartment. We've received your booking request and will get back to you shortly to confirm availability.
                   </p>
                   <button
                     onClick={() => setIsSubmitted(false)}
@@ -507,6 +518,7 @@ export default function GambiaApartment({ apartmentData }) {
     </>
   );
 }
+
 export async function getStaticProps() {
   try {
     // Log the beginning of the fetch process
@@ -534,7 +546,7 @@ export async function getStaticProps() {
       }
     `);
     
-    console.log('Featured apartment query completed.');
+    console.log('Featured apartment query completed, found:', Boolean(apartmentData));
     
     // If no featured apartment is found, get any apartment
     if (!apartmentData) {
@@ -559,18 +571,17 @@ export async function getStaticProps() {
           houseRules
         }
       `);
+      
+      console.log('Any apartment query completed, found:', Boolean(apartmentData));
     }
-    
-    // Log the results for debugging
-    console.log('Apartment data fetched:', apartmentData ? 'Success' : 'Not Found');
     
     // If still no data, create fallback data
     if (!apartmentData) {
       console.log('No apartment data found in Sanity, using fallback data');
       
       apartmentData = {
-        title: "Luxury Beachfront Apartment in Gambia",
-        description: "Experience the beauty of Gambia from our exclusive private apartment with stunning ocean views and modern amenities. Perfect for vacations with family or friends.",
+        title: "Luxury Apartment in Gambia",
+        description: "Experience the beauty of Gambia from our exclusive private apartment with stunning views and modern amenities. Perfect for vacations with family or friends.",
         bedrooms: 3,
         bathrooms: 2,
         maxGuests: 6,
@@ -586,7 +597,7 @@ export async function getStaticProps() {
           "Beach Access"
         ],
         location: {
-          address: "Beach Road, Banjul",
+          address: "Central Location, Banjul",
           city: "Banjul",
           country: "Gambia",
           highlights: [
@@ -613,8 +624,8 @@ export async function getStaticProps() {
     return {
       props: {
         apartmentData: {
-          title: "Luxury Beachfront Apartment in Gambia",
-          description: "Experience the beauty of Gambia from our exclusive private apartment with stunning ocean views and modern amenities. Perfect for vacations with family or friends.",
+          title: "Luxury Apartment in Gambia",
+          description: "Experience the beauty of Gambia from our exclusive private apartment with stunning views and modern amenities. Perfect for vacations with family or friends.",
           bedrooms: 3,
           bathrooms: 2,
           maxGuests: 6,
@@ -626,15 +637,14 @@ export async function getStaticProps() {
             "Full Kitchen", 
             "Washing Machine", 
             "Smart TV", 
-            "Balcony", 
-            "Beach Access"
+            "Balcony"
           ],
           location: {
-            address: "Beach Road, Banjul",
+            address: "Central Location, Banjul",
             city: "Banjul",
             country: "Gambia",
             highlights: [
-              "5 minutes walk to the beach",
+              "5 minutes walk to attractions",
               "15 minutes to local markets and restaurants",
               "30 minutes from Banjul International Airport",
               "Close to wildlife reserves and cultural sites"
