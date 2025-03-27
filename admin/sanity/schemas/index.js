@@ -4,6 +4,7 @@ import affiliateProduct from './affiliateProduct'
 import bookingRequest from './bookingRequest'
 import blogPost from './blogPost'
 import contactMessage from './contactMessage'
+import newsletter from './newsletter'
 
 export const schemaTypes = [
   travelPackage,
@@ -11,5 +12,6 @@ export const schemaTypes = [
   affiliateProduct,
   bookingRequest,
   blogPost,
-  contactMessage
+  contactMessage,
+  newsletter
 ]

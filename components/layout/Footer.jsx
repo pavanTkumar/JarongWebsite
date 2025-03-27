@@ -1,8 +1,55 @@
-// Footer.jsx - Fixed Link components
+// components/layout/Footer.jsx - Fully functional with newsletter subscription
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [subscribeStatus, setSubscribeStatus] = useState(null);
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!email) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/submit-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          formType: 'newsletter',
+          email: email
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSubscribeStatus('success');
+        setEmail('');
+        
+        // Reset status after 5 seconds
+        setTimeout(() => {
+          setSubscribeStatus(null);
+        }, 5000);
+      } else {
+        setSubscribeStatus('error');
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      setSubscribeStatus('error');
+    }
+    
+    setIsSubmitting(false);
+  };
+
+  const currentYear = new Date().getFullYear();
+
   return (
     <footer className="bg-gray-900 text-white pt-16 pb-8">
       <div className="container mx-auto px-6">
@@ -131,26 +178,56 @@ const Footer = () => {
             <p className="text-gray-400 mb-4">
               Subscribe to get the latest travel deals and updates.
             </p>
-            <form className="flex">
+            
+            {subscribeStatus === 'success' ? (
+              <div className="bg-green-800/30 border border-green-700/50 p-3 rounded-lg">
+                <p className="text-green-300 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Thanks for subscribing!
+                </p>
+              </div>
+            ) : subscribeStatus === 'error' ? (
+              <div className="bg-red-800/30 border border-red-700/50 p-3 rounded-lg mb-3">
+                <p className="text-red-300 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Subscription failed. Please try again.
+                </p>
+              </div>
+            ) : null}
+            
+            <form onSubmit={handleNewsletterSubmit} className="flex">
               <input 
                 type="email" 
                 placeholder="Your email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="px-4 py-2 rounded-l-lg bg-gray-800 border border-gray-700 text-white w-full focus:outline-none focus:ring-2 focus:ring-amber-400"
                 required
               />
               <button 
                 type="submit" 
-                className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-r-lg transition-colors"
+                className={`bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-r-lg transition-colors ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                disabled={isSubmitting}
               >
-                Subscribe
+                {isSubmitting ? (
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                ) : (
+                  'Subscribe'
+                )}
               </button>
             </form>
           </motion.div>
         </div>
         
-        
         <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500">
-          <p>&copy; {new Date().getFullYear()} JarongMedia. All rights reserved.</p>
+          <p>&copy; {currentYear} JarongMedia. All rights reserved.</p>
         </div>
       </div>
     </footer>

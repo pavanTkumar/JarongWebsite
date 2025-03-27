@@ -1,4 +1,3 @@
-// pages/packages/[slug].js
 import Head from 'next/head';
 import { useState } from 'react';
 import { motion } from 'framer-motion';

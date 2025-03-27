@@ -4,22 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { client } from '../lib/sanity';
-
-function getSanityImageUrl(source) {
-    if (!source || !source.asset) return '/images/placeholder.jpg';
-    try {
-      const ref = source.asset._ref || source.asset._id || '';
-      const [_file, id, dimensions, extension] = ref.split('-');
-      let format = extension;
-      if (format === 'jpg') format = 'jpeg';
-      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'jq3x5bz4';
-      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
-      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}-${dimensions}.${format}`;
-    } catch (error) {
-      console.error('Error with image URL:', error);
-      return '/images/placeholder.jpg';
-    }
-  }
+import { getSanityImageUrl } from '../lib/imageUtils';
 
 export default function Affiliate({ affiliateProducts }) {
   // Categories for filtering
@@ -39,43 +24,21 @@ export default function Affiliate({ affiliateProducts }) {
     ? affiliateProducts
     : affiliateProducts.filter(product => product.category === activeCategory);
 
-  // Fallback products if none are found in Sanity or filtered category
-  const fallbackProducts = [
-    {
-      _id: 'fallback-1',
-      title: 'Premium Travel Insurance',
-      description: 'Comprehensive travel insurance with COVID-19 coverage for peace of mind during your journey.',
-      image: '/images/affiliate/insurance.jpg',
-      category: 'insurance',
-      url: '#',
-      rating: 4.8,
-      discount: '15% OFF'
-    },
-    {
-      _id: 'fallback-2',
-      title: 'Noise-Cancelling Headphones',
-      description: 'Get the ultimate travel experience with these premium noise-cancelling headphones, perfect for long flights.',
-      image: '/images/affiliate/headphones.jpg',
-      category: 'gear',
-      url: '#',
-      rating: 4.9,
-      discount: '20% OFF'
-    },
-    {
-      _id: 'fallback-3',
-      title: 'Exclusive Hotel Discounts',
-      description: 'Access special rates at premium hotels worldwide, exclusively for JarongMedia customers.',
-      image: '/images/affiliate/hotel.jpg',
-      category: 'accommodation',
-      url: '#',
-      rating: 4.7,
-      discount: 'Up to 30% OFF'
+  // Properly process the product image
+  const processProductImage = (product) => {
+    // Already a string URL
+    if (typeof product.image === 'string') {
+      return product.image;
     }
-  ];
-
-  // Display products or fallbacks if none found
-  const displayProducts = filteredProducts.length > 0 ? filteredProducts : 
-    (activeCategory === 'all' ? fallbackProducts : fallbackProducts.filter(p => p.category === activeCategory));
+    
+    // Sanity image object
+    if (product.image && (product.image.asset || product.image._ref)) {
+      return getSanityImageUrl(product.image);
+    }
+    
+    // Fallback
+    return '/images/placeholder.jpg';
+  };
 
   return (
     <>
@@ -87,7 +50,7 @@ export default function Affiliate({ affiliateProducts }) {
       {/* Hero Section */}
       <section className="relative pt-24 pb-16 bg-blue-900">
         <div className="absolute inset-0 z-0 opacity-30">
-          <div className="w-full h-full bg-[url('/images/affiliate/affiliate-hero.jpg')] bg-cover bg-center"></div>
+          <div className="w-full h-full bg-cover bg-center bg-[url('/images/affiliate/affiliate-hero.jpg')]"></div>
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-blue-900/80 to-blue-900/90 z-0"></div>
         
@@ -127,57 +90,55 @@ export default function Affiliate({ affiliateProducts }) {
       {/* Products Grid */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {displayProducts.map((product, index) => (
-              <motion.div
-                key={product._id}
-                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <div className="relative">
-                  <div 
-                    className="w-full h-56 bg-cover bg-center"
-                    style={{ backgroundImage: `url(${product.image ? 
-                      (typeof product.image === 'string' ? product.image : getSanityImageUrl(product.image)) 
-                      : '/images/placeholder.jpg'})` }}
-                  ></div>
-                  {product.discount && (
-                    <div className="absolute top-4 right-4 bg-red-500 text-white py-1 px-3 rounded-full font-semibold">
-                      {product.discount}
-                    </div>
-                  )}
-                </div>
-                
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h2 className="text-xl font-bold text-gray-900">{product.title}</h2>
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      <span>{product.rating || '4.5'}</span>
-                    </div>
+          {filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProducts.map((product, index) => (
+                <motion.div
+                  key={product._id}
+                  className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="relative">
+                    <div 
+                      className="w-full h-56 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${processProductImage(product)})` }}
+                    ></div>
+                    {product.discount && (
+                      <div className="absolute top-4 right-4 bg-red-500 text-white py-1 px-3 rounded-full font-semibold">
+                        {product.discount}
+                      </div>
+                    )}
                   </div>
                   
-                  <p className="text-gray-600 mb-6">{product.description}</p>
-                  
-                  <a 
-                    href={product.url || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full bg-amber-500 hover:bg-amber-600 text-white text-center py-3 rounded-md transition-colors"
-                  >
-                    View Deal
-                  </a>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {displayProducts.length === 0 && (
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-2">
+                      <h2 className="text-xl font-bold text-gray-900">{product.title}</h2>
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-yellow-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        <span>{product.rating || '4.5'}</span>
+                      </div>
+                    </div>
+                    
+                    <p className="text-gray-600 mb-6">{product.description}</p>
+                    
+                    <a 
+                      href={product.url || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full bg-amber-500 hover:bg-amber-600 text-white text-center py-3 rounded-md transition-colors"
+                    >
+                      View Deal
+                    </a>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
             <div className="text-center py-12">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">No products found</h3>
               <p className="text-gray-600">Please try a different category or check back later.</p>
@@ -245,9 +206,12 @@ export async function getStaticProps() {
         category,
         url,
         rating,
-        discount
+        discount,
+        featured
       }
     `);
+
+    console.log('Fetched affiliate products:', affiliateProducts?.length);
 
     return {
       props: {
