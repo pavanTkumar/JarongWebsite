@@ -1,15 +1,16 @@
-// Testimonials.jsx - Modern Testimonial Cards
+// components/sections/Testimonials.jsx
 import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const Testimonials = () => {
-  // Example testimonials data
-  const testimonials = [
+const Testimonials = ({ testimonials = [] }) => {
+  // Use the testimonials passed from props, but have fallbacks ready
+  // in case the array is empty
+  const defaultTestimonials = [
     {
       id: 1,
       name: "Sarah Johnson",
       location: "New York, USA",
-      image: "/images/testimonial-1.jpg",
+      image: "/images/testimonial/testimonial-1.jpg",
       rating: 5,
       text: "Our trip to Gambia was amazing! The apartment was exactly as pictured, and the local experiences JarongMedia arranged were unforgettable. Will definitely book with them again.",
     },
@@ -17,7 +18,7 @@ const Testimonials = () => {
       id: 2,
       name: "Michael Chen",
       location: "Toronto, Canada",
-      image: "/images/testimonial-2.jpg",
+      image: "/images/testimonial/testimonial-2.jpg",
       rating: 5,
       text: "I was hesitant to book with a new agency, but JarongMedia exceeded all my expectations. Their attention to detail and personalized service made our family vacation perfect.",
     },
@@ -25,11 +26,14 @@ const Testimonials = () => {
       id: 3,
       name: "Elena Rodriguez",
       location: "Madrid, Spain",
-      image: "/images/testimonial-3.jpg",
+      image: "/images/testimonial/testimonial-3.jpg",
       rating: 5,
       text: "The African safari package was incredible - from the accommodations to the guides, everything was top-notch. The team was responsive and helpful throughout our journey.",
     },
   ];
+
+  // Use provided testimonials if available, otherwise use defaults
+  const displayTestimonials = testimonials && testimonials.length > 0 ? testimonials : defaultTestimonials;
 
   return (
     <section className="py-20 bg-blue-50">
@@ -65,9 +69,9 @@ const Testimonials = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
+          {displayTestimonials.map((testimonial, index) => (
             <motion.div
-              key={testimonial.id}
+              key={testimonial.id || index}
               className="bg-white p-8 rounded-xl shadow-lg relative"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -78,7 +82,7 @@ const Testimonials = () => {
                 <div className="w-12 h-12 rounded-full border-4 border-white overflow-hidden shadow-lg">
                   <div 
                     className="w-full h-full bg-cover bg-center"
-                    style={{ backgroundImage: `url(${testimonial.image || '/images/default-avatar.jpg'})` }}
+                    style={{ backgroundImage: `url(${testimonial.image || '/images/testimonial/testimonial-1.jpg'})` }}
                   ></div>
                 </div>
               </div>
@@ -88,7 +92,7 @@ const Testimonials = () => {
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className={`w-5 h-5 ${i < testimonial.rating ? 'text-amber-500' : 'text-gray-300'}`}
+                      className={`w-5 h-5 ${i < (testimonial.rating || 5) ? 'text-amber-500' : 'text-gray-300'}`}
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -104,7 +108,7 @@ const Testimonials = () => {
                 <svg className="w-10 h-10 text-blue-100 mb-2 mx-auto" fill="currentColor" viewBox="0 0 32 32">
                   <path d="M10 8c-2.2 0-4 1.8-4 4v2c0 2.2 1.8 4 4 4h2v4h4v-4c0-2.2-1.8-4-4-4h-2v-2h4V8h-4zm12 0c-2.2 0-4 1.8-4 4v2c0 2.2 1.8 4 4 4h2v4h4v-4c0-2.2-1.8-4-4-4h-2v-2h4V8h-4z" />
                 </svg>
-                <p className="text-gray-600 text-center italic">{testimonial.text}</p>
+                <p className="text-gray-600 text-center italic">{testimonial.text || testimonial.testimonial}</p>
               </div>
             </motion.div>
           ))}

@@ -1,4 +1,4 @@
-// HeroSection.jsx - Fixed Link components
+// components/sections/HeroSection.jsx
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,20 +7,19 @@ import { motion } from 'framer-motion';
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen w-full overflow-hidden">
-      {/* Hero Background - Properly positioned */}
+      {/* Hero Background with darker overlay */}
       <div className="absolute inset-0 z-0">
-        {/* If you have Next.js Image properly set up */}
         <div 
           className="w-full h-full bg-[url('/images/hero-bg.jpg')] bg-cover bg-center"
-          style={{ filter: "brightness(0.8)" }}
+          style={{ filter: "brightness(0.6)" }} //* Changed from 0.8 to 0.6 for darker background */}
         />
-        {/* Modern gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/40 via-transparent to-purple-900/30"></div>
+        {/* Modern gradient overlay - with increased opacity */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/60 via-blue-900/40 to-purple-900/50"></div>
       </div>
       
-      {/* Content Container - Properly spaced */}
+      {/* Content Container */}
       <div className="relative z-10 container mx-auto px-6 pt-32 pb-20 h-screen flex flex-col justify-center">
-        {/* Hero Content - Clean typography */}
+        {/* Hero Content */}
         <div className="max-w-3xl">
           <motion.h1 
             className="text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6"
@@ -61,26 +60,26 @@ const HeroSection = () => {
           </motion.div>
         </div>
         
-        {/* Travel Statistics - Clean, properly spaced cards */}
+        {/* Travel Statistics - more visible on dark background */}
         <motion.div 
           className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-auto"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.6 }}
         >
-          <div className="bg-white/10 backdrop-blur rounded-xl p-5 border border-white/10">
+          <div className="bg-white/15 backdrop-blur rounded-xl p-5 border border-white/15"> {/* Increased opacity */}
             <p className="text-amber-400 text-3xl font-bold">1200+</p>
             <p className="text-white">Happy Travelers</p>
           </div>
-          <div className="bg-white/10 backdrop-blur rounded-xl p-5 border border-white/10">
+          <div className="bg-white/15 backdrop-blur rounded-xl p-5 border border-white/15">
             <p className="text-amber-400 text-3xl font-bold">30+</p>
             <p className="text-white">Destinations</p>
           </div>
-          <div className="bg-white/10 backdrop-blur rounded-xl p-5 border border-white/10">
+          <div className="bg-white/15 backdrop-blur rounded-xl p-5 border border-white/15">
             <p className="text-amber-400 text-3xl font-bold">15+</p>
             <p className="text-white">Years Experience</p>
           </div>
-          <div className="bg-white/10 backdrop-blur rounded-xl p-5 border border-white/10">
+          <div className="bg-white/15 backdrop-blur rounded-xl p-5 border border-white/15">
             <p className="text-amber-400 text-3xl font-bold">98%</p>
             <p className="text-white">Satisfaction</p>
           </div>

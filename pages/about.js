@@ -446,7 +446,7 @@ export default function About({ aboutData }) {
               transition={{ duration: 0.7, delay: 0.1 }}
               viewport={{ once: true }}
             >
-              {aboutData?.ctaText || 'Whether you're planning a relaxing getaway to Gambia, seeking adventure across Africa, or need assistance with flights and accommodations, we're here to make your travel dreams a reality.'}
+              {aboutData?.ctaText || 'Whether you are planning a relaxing getaway to Gambia, seeking adventure across Africa, or need assistance with flights and accommodations, we are here to make your travel dreams a reality.'}
             </motion.p>
             <motion.div 
               className="flex flex-wrap justify-center gap-4"

@@ -1,73 +1,24 @@
 // components/sections/FeaturedDestinations.jsx
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { urlFor } from '../../lib/sanity';
 
-// Include the function directly in the component temporarily
-function getSanityImageUrl(source) {
-    if (!source || !source.asset) return '/images/placeholder.jpg';
-    try {
-      const ref = source.asset._ref || source.asset._id || '';
-      const [_file, id, dimensions, extension] = ref.split('-');
-      let format = extension;
-      if (format === 'jpg') format = 'jpeg';
-      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'jq3x5bz4';
-      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
-      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${id}-${dimensions}.${format}`;
-    } catch (error) {
-      console.error('Error with image URL:', error);
-      return '/images/placeholder.jpg';
-    }
-  }
 const FeaturedDestinations = ({ packages = [] }) => {
-  // Fallback data if no packages are provided from Sanity
-  const fallbackDestinations = [
-    {
-      id: 1,
-      title: 'Gambia Beach Resort',
-      location: 'Gambia, West Africa',
-      image: '/images/gambia-beach.jpg',
-      price: 1299,
-      duration: '7 Days',
-      rating: 4.9,
-      slug: 'gambia-beach-resort'
-    },
-    {
-      id: 2,
-      title: 'Seychelles Paradise',
-      location: 'Seychelles, East Africa',
-      image: '/images/seychelles.jpg',
-      price: 2199,
-      duration: '10 Days',
-      rating: 4.8,
-      slug: 'seychelles-paradise'
-    },
-    {
-      id: 3,
-      title: 'Moroccan Adventure',
-      location: 'Marrakech, Morocco',
-      image: '/images/morocco.jpg',
-      price: 1499,
-      duration: '8 Days',
-      rating: 4.7,
-      slug: 'moroccan-adventure'
-    }
-  ];
-
   // If Sanity packages exist, format them for display
   // Otherwise use fallback destinations
   const destinations = packages && packages.length > 0 
     ? packages.map(pkg => ({
         id: pkg._id,
         title: pkg.title,
-        location: pkg.location,
-        image: pkg.mainImage ? getSanityImageUrl(pkg.mainImage) : '/images/placeholder.jpg',
-        price: pkg.price,
-        duration: pkg.duration,
+        location: pkg.location || 'Exotic Destination',
+        image: pkg.mainImage ? urlFor(pkg.mainImage) : '/images/placeholder.jpg',
+        price: pkg.price || 999,
+        duration: pkg.duration || '7 Days',
         rating: pkg.rating || 4.8,
         slug: pkg.slug?.current || pkg._id
       }))
-    : fallbackDestinations;
+    : [];
 
   return (
     <section className="py-20 bg-gray-50">
@@ -93,61 +44,67 @@ const FeaturedDestinations = ({ packages = [] }) => {
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {destinations.map((destination, index) => (
-            <motion.div
-              key={destination.id}
-              className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all group"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true }}
-            >
-              <div className="relative h-64 overflow-hidden">
-                <div
-                  className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                  style={{ backgroundImage: `url(${destination.image})` }}
-                ></div>
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm py-1 px-3 rounded-full text-sm font-medium text-blue-600">
-                  {destination.duration}
+        {destinations.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {destinations.map((destination, index) => (
+              <motion.div
+                key={destination.id}
+                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all group"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <div className="relative h-64 overflow-hidden">
+                  <div
+                    className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                    style={{ backgroundImage: `url(${destination.image})` }}
+                  ></div>
+                  <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm py-1 px-3 rounded-full text-sm font-medium text-blue-600">
+                    {destination.duration}
+                  </div>
                 </div>
-              </div>
 
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold text-gray-900">{destination.title}</h3>
-                  <div className="flex items-center gap-1 text-amber-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                      <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-bold text-gray-900">{destination.title}</h3>
+                    <div className="flex items-center gap-1 text-amber-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-medium">{destination.rating}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center text-gray-600 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span className="font-medium">{destination.rating}</span>
+                    <span>{destination.location}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <span className="text-sm text-gray-500">Starting from</span>
+                      <p className="text-xl font-bold text-blue-600">${destination.price}</p>
+                    </div>
+                    <Link 
+                      href={`/packages/${destination.slug}`}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
+                    >
+                      View Details
+                    </Link>
                   </div>
                 </div>
-
-                <div className="flex items-center text-gray-600 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>{destination.location}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="text-sm text-gray-500">Starting from</span>
-                    <p className="text-xl font-bold text-blue-600">${destination.price}</p>
-                  </div>
-                  <Link 
-                    href={`/packages/${destination.slug}`}
-                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 bg-white rounded-lg shadow-sm">
+            <p className="text-gray-600">No featured packages available at the moment. Check back soon for exciting travel offers!</p>
+          </div>
+        )}
 
         <div className="text-center mt-12">
           <Link 
