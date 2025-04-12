@@ -7,6 +7,7 @@ import contactMessage from './contactMessage'
 import newsletter from './newsletter'
 import about from './about'
 import testimonial from './testimonial'
+import socialMedia from './socialMedia'
 
 export const schemaTypes = [
   travelPackage,
@@ -17,5 +18,6 @@ export const schemaTypes = [
   contactMessage,
   newsletter,
   about,
-  testimonial
+  testimonial,
+  socialMedia
 ]

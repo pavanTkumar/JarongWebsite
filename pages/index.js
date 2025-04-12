@@ -5,9 +5,9 @@ import FeaturedDestinations from '../components/sections/FeaturedDestinations';
 import WhyChooseUs from '../components/sections/WhyChooseUs';
 import Testimonials from '../components/sections/Testimonials';
 import CallToAction from '../components/sections/CallToAction';
-//import { client } from '../lib/sanity';
+import { client } from '../lib/sanity';
 
-export default function Home({ featuredPackages = [], testimonials = [] }) {
+export default function Home({ featuredPackages = [], testimonials = [], socialLinks = [] }) {
   return (
     <div>
       <Head>
@@ -44,19 +44,31 @@ export async function getStaticProps() {
 
     // Fetch testimonials from Sanity
     const testimonials = await client.fetch(`
-      *[_type == "bookingRequest" && status == "completed" && defined(testimonial)] | order(_createdAt desc)[0...6] {
+      *[_type == "testimonial" && active == true] | order(order asc)[0...6] {
         _id,
         name,
         location,
-        testimonial,
+        image,
+        text,
         rating
+      }
+    `);
+    
+    // Fetch social media links
+    const socialLinks = await client.fetch(`
+      *[_type == "socialMedia" && active == true] | order(order asc) {
+        _id,
+        platform,
+        url,
+        displayName
       }
     `);
 
     return {
       props: {
         featuredPackages: featuredPackages || [],
-        testimonials: testimonials || []
+        testimonials: testimonials || [],
+        socialLinks: socialLinks || []
       },
       revalidate: 600 // Revalidate every 10 minutes
     };
@@ -65,7 +77,8 @@ export async function getStaticProps() {
     return {
       props: {
         featuredPackages: [],
-        testimonials: []
+        testimonials: [],
+        socialLinks: []
       },
       revalidate: 300
     };

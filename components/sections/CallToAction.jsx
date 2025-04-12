@@ -1,4 +1,4 @@
-// CallToAction.jsx - Modern Booking CTA
+// File: components/sections/CallToAction.jsx
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -14,17 +14,21 @@ const CallToAction = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Prepare form data for API
+    // Prepare form data for the submit-form API
     const formData = {
-      name: "Quick Booking", // Default name for quick bookings
-      email: "pending@example.com", // Will be updated later in booking page
+      formType: 'booking', // Identify form type for routing
       bookingType: 'package',
-      specialRequests: `Destination: ${destination}, Travel dates: ${dates}, Travelers: ${travelers}`,
-      passengers: travelers || "1" // Default to 1 if not selected
+      name: "Quick Booking", // Default name for quick bookings
+      email: "", // Will be updated later in booking page
+      destination: destination,
+      travelDate: dates,
+      travelers: travelers || "1", // Default to 1 if not selected
+      specialRequests: `Quick booking from homepage. Destination: ${destination}, Travel dates: ${dates}, Travelers: ${travelers}`
     };
     
     try {
-      const response = await fetch('/api/booking', {
+      // Use the centralized form handler
+      const response = await fetch('/api/submit-form', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,6 +50,7 @@ const CallToAction = () => {
           setIsSubmitted(false);
         }, 5000);
       } else {
+        console.error('Error response:', data);
         alert('There was an error submitting your booking request. Please try again.');
       }
     } catch (error) {
@@ -131,12 +136,14 @@ const CallToAction = () => {
                   <div>
                     <label className="block text-white text-sm font-medium mb-2">When are you planning to travel?</label>
                     <input
-                      type="text"
+                      type="date"
                       className="w-full p-3 bg-white/20 border border-white/30 rounded-lg placeholder-white/70 text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
                       placeholder="Travel dates"
                       value={dates}
                       onChange={(e) => setDates(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]} // Set min date to today
                       required
+                      style={{ colorScheme: 'dark' }} // Ensure date picker appears properly on dark background
                     />
                   </div>
                   <div>

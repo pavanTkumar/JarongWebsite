@@ -7,39 +7,48 @@ import { client } from '../lib/sanity';
 import { getSanityImageUrl, getGalleryImageUrls } from '../lib/imageUtils';
 import { processAmenities } from '../lib/amenityUtils';
 
-export default function GambiaApartment({ apartmentData }) {
+export default function GambiaApartment({ apartments }) {
+  const [selectedApartment, setSelectedApartment] = useState(0);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
   
   useEffect(() => {
-    console.log("Apartment data in component:", apartmentData);
-  }, [apartmentData]);
+    console.log("Apartments data in component:", apartments);
+  }, [apartments]);
+  
+  // Reset selected image when switching apartments
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [selectedApartment]);
   
   // For debugging
-  if (!apartmentData || Object.keys(apartmentData).length === 0) {
-    console.error("No apartment data available");
+  if (!apartments || apartments.length === 0) {
+    console.error("No apartments data available");
   }
   
+  // Get the currently selected apartment
+  const currentApartment = apartments?.[selectedApartment] || {};
+  
   // Prepare amenities using our utility function
-  const amenities = processAmenities(apartmentData?.amenities);
+  const amenities = processAmenities(currentApartment?.amenities);
   
   // Properly handle images from Sanity with appropriate fallbacks
-  const mainImage = apartmentData?.mainImage 
-    ? getSanityImageUrl(apartmentData.mainImage) 
+  const mainImage = currentApartment?.mainImage 
+    ? getSanityImageUrl(currentApartment.mainImage) 
     : '/images/placeholder.jpg';
   
   // Process gallery images from Sanity
   let galleryImages = [];
   
-  if (apartmentData?.galleryImages && apartmentData.galleryImages.length > 0) {
+  if (currentApartment?.galleryImages && currentApartment.galleryImages.length > 0) {
     // Use actual gallery images from Sanity
-    galleryImages = getGalleryImageUrls(apartmentData.galleryImages);
+    galleryImages = getGalleryImageUrls(currentApartment.galleryImages);
     if (galleryImages.length === 0) {
       galleryImages = [mainImage]; // Fall back to main image if gallery processing failed
     }
-  } else if (apartmentData?.mainImage) {
+  } else if (currentApartment?.mainImage) {
     // If no gallery but has main image, use that
     galleryImages = [mainImage];
   } else {
@@ -62,8 +71,21 @@ export default function GambiaApartment({ apartmentData }) {
     cabDate: '',
     pickupDateTime: '',
     transportNotes: '',
-    bookingType: 'apartment'
+    bookingType: 'apartment',
+    apartmentId: currentApartment?._id || '',
+    apartmentTitle: currentApartment?.title || 'Gambia Apartment'
   });
+  
+  // Update form apartment reference when selected apartment changes
+  useEffect(() => {
+    if (currentApartment) {
+      setFormData(prev => ({
+        ...prev,
+        apartmentId: currentApartment._id || '',
+        apartmentTitle: currentApartment.title || 'Gambia Apartment'
+      }));
+    }
+  }, [currentApartment]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -107,7 +129,9 @@ export default function GambiaApartment({ apartmentData }) {
           cabDate: '',
           pickupDateTime: '',
           transportNotes: '',
-          bookingType: 'apartment'
+          bookingType: 'apartment',
+          apartmentId: currentApartment?._id || '',
+          apartmentTitle: currentApartment?.title || 'Gambia Apartment'
         });
       } else {
         setError(data.message || 'There was an error submitting your booking request. Please try again.');
@@ -121,14 +145,14 @@ export default function GambiaApartment({ apartmentData }) {
   };
 
   // Get apartment details and use appropriate defaults if not available
-  const apartmentTitle = apartmentData?.title || 'Luxury Apartment in Gambia';
-  const apartmentDescription = apartmentData?.description || 
+  const apartmentTitle = currentApartment?.title || 'Luxury Apartment in Gambia';
+  const apartmentDescription = currentApartment?.description || 
     'Experience the beauty and tranquility of Gambia from our exclusive private apartment with modern amenities and convenient access to local attractions.';
-  const bedroomCount = apartmentData?.bedrooms || 3;
-  const bathroomCount = apartmentData?.bathrooms || 2;
-  const guestCount = apartmentData?.maxGuests || 6;
-  const pricePerNight = apartmentData?.pricePerNight || 150;
-  const location = apartmentData?.location?.city || 'Gambia';
+  const bedroomCount = currentApartment?.bedrooms || 3;
+  const bathroomCount = currentApartment?.bathrooms || 2;
+  const guestCount = currentApartment?.maxGuests || 6;
+  const pricePerNight = currentApartment?.pricePerNight || 150;
+  const location = currentApartment?.location?.city || 'Gambia';
 
   return (
     <>
@@ -161,6 +185,30 @@ export default function GambiaApartment({ apartmentData }) {
           </div>
         </div>
       </section>
+      
+      {/* Apartment Selector - Only show if multiple apartments */}
+      {apartments && apartments.length > 1 && (
+        <section className="py-8 bg-white shadow-md sticky top-0 z-30">
+          <div className="container mx-auto px-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Our Gambia Apartments</h2>
+            <div className="flex flex-wrap gap-4">
+              {apartments.map((apt, index) => (
+                <button
+                  key={apt._id || index}
+                  onClick={() => setSelectedApartment(index)}
+                  className={`px-6 py-3 rounded-lg transition-all ${
+                    selectedApartment === index
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {apt.title || `Apartment ${index + 1}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Gallery */}
       <section className="py-16 bg-white">
@@ -203,10 +251,10 @@ export default function GambiaApartment({ apartmentData }) {
                 </p>
                 <p className="text-gray-600 mb-4">
                   The apartment features {bedroomCount} bedrooms, {bathroomCount} bathrooms, 
-                  {apartmentData?.amenities?.includes('Fully Equipped Kitchen') || apartmentData?.amenities?.includes('Kitchen') ? 
+                  {currentApartment?.amenities?.includes('Fully Equipped Kitchen') || currentApartment?.amenities?.includes('Kitchen') ? 
                     ' a fully equipped kitchen, ' : ' '} 
                   and a spacious living area
-                  {apartmentData?.location?.address ? ` located at ${apartmentData.location.address}` : ''}.
+                  {currentApartment?.location?.address ? ` located at ${currentApartment.location.address}` : ''}.
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="text-amber-500 font-bold text-3xl">${pricePerNight}</div>
@@ -253,12 +301,12 @@ export default function GambiaApartment({ apartmentData }) {
             <div className="w-full md:w-1/2">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Excellent Location</h2>
               <p className="text-gray-600 mb-4">
-                {apartmentData?.location?.description || 
+                {currentApartment?.location?.description || 
                  `Our apartment is ideally situated in ${location}, 
                   offering both privacy and convenient access to local attractions.`}
               </p>
               <ul className="space-y-3 mb-6">
-                {(apartmentData?.location?.highlights || [
+                {(currentApartment?.location?.highlights || [
                   '5 minutes walk to the beach',
                   '15 minutes to local markets and restaurants',
                   '30 minutes from Banjul International Airport',
@@ -279,11 +327,11 @@ export default function GambiaApartment({ apartmentData }) {
                 Check Availability
               </Link>
             </div>
-            <div className="w-full md:w-1/2 rounded-xl overflow-hidden h-[400px] shadow-lg">
-              {/* Location map image or Google Maps embed if coordinates available */}
-              {apartmentData?.location?.mapCoordinates ? (
+            <div className="w-full md:w-1/2 rounded-xl overflow-hidden h-[400px] shadow-lg relative">
+              {/* Map image or interactive map */}
+              {currentApartment?.location?.mapCoordinates ? (
                 <iframe 
-                  src={`https://maps.google.com/maps?q=${apartmentData.location.mapCoordinates}&z=15&output=embed`} 
+                  src={`https://maps.google.com/maps?q=${currentApartment.location.mapCoordinates}&z=15&output=embed`} 
                   width="100%" 
                   height="100%" 
                   frameBorder="0" 
@@ -293,10 +341,24 @@ export default function GambiaApartment({ apartmentData }) {
                   tabIndex="0"
                 ></iframe>
               ) : (
-                <div 
-                  className="w-full h-full bg-cover bg-center"
-                  style={{ backgroundImage: `url(${mainImage})` }}
-                ></div>
+                <div className="relative w-full h-full">
+                  <div 
+                    className="w-full h-full bg-cover bg-center"
+                    style={{ backgroundImage: `url(${mainImage})` }}
+                  ></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-end">
+                    <div className="p-6 text-white">
+                      <h3 className="text-xl font-bold mb-2">{currentApartment?.location?.address || `${location}, Gambia`}</h3>
+                      <p className="flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {currentApartment?.location?.city || location}, {currentApartment?.location?.country || 'Gambia'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -524,9 +586,9 @@ export async function getStaticProps() {
     // Log the beginning of the fetch process
     console.log('Starting to fetch apartment data from Sanity...');
     
-    // First try to get the featured apartment
-    let apartmentData = await client.fetch(`
-      *[_type == "apartment" && featured == true][0] {
+    // Fetch all apartments with "Gambia" in the location
+    const apartments = await client.fetch(`
+      *[_type == "apartment" && location.country match "Gambia"] | order(featured desc) {
         _id,
         title,
         slug,
@@ -546,40 +608,14 @@ export async function getStaticProps() {
       }
     `);
     
-    console.log('Featured apartment query completed, found:', Boolean(apartmentData));
+    console.log('Gambia apartments query completed, found:', apartments?.length);
     
-    // If no featured apartment is found, get any apartment
-    if (!apartmentData) {
-      console.log('No featured apartment found, trying to get any apartment...');
+    // If no apartments are found, use fallback data
+    if (!apartments || apartments.length === 0) {
+      console.log('No Gambia apartments found, using fallback data');
       
-      apartmentData = await client.fetch(`
-        *[_type == "apartment"][0] {
-          _id,
-          title,
-          slug,
-          description,
-          mainImage,
-          galleryImages,
-          pricePerNight,
-          pricePerWeek,
-          pricePerMonth,
-          bedrooms,
-          bathrooms,
-          maxGuests,
-          amenities,
-          location,
-          houseRules
-        }
-      `);
-      
-      console.log('Any apartment query completed, found:', Boolean(apartmentData));
-    }
-    
-    // If still no data, create fallback data
-    if (!apartmentData) {
-      console.log('No apartment data found in Sanity, using fallback data');
-      
-      apartmentData = {
+      // Create fallback data for a single apartment
+      const fallbackApartment = {
         title: "Luxury Apartment in Gambia",
         description: "Experience the beauty of Gambia from our exclusive private apartment with stunning views and modern amenities. Perfect for vacations with family or friends.",
         bedrooms: 3,
@@ -593,27 +629,34 @@ export async function getStaticProps() {
           "Full Kitchen", 
           "Washing Machine", 
           "Smart TV", 
-          "Balcony", 
-          "Beach Access"
+          "Balcony"
         ],
         location: {
           address: "Central Location, Banjul",
           city: "Banjul",
           country: "Gambia",
           highlights: [
-            "5 minutes walk to the beach",
+            "5 minutes walk to attractions",
             "15 minutes to local markets and restaurants",
             "30 minutes from Banjul International Airport",
             "Close to wildlife reserves and cultural sites"
           ]
         }
       };
+      
+      // Return the fallback data as an array with one item
+      return {
+        props: {
+          apartments: [fallbackApartment]
+        },
+        revalidate: 600
+      };
     }
     
-    // Return the apartment data
+    // Return the list of apartments
     return {
       props: {
-        apartmentData
+        apartments
       },
       revalidate: 600 // Revalidate every 10 minutes
     };
@@ -623,7 +666,7 @@ export async function getStaticProps() {
     // Return fallback data in case of error
     return {
       props: {
-        apartmentData: {
+        apartments: [{
           title: "Luxury Apartment in Gambia",
           description: "Experience the beauty of Gambia from our exclusive private apartment with stunning views and modern amenities. Perfect for vacations with family or friends.",
           bedrooms: 3,
@@ -650,7 +693,7 @@ export async function getStaticProps() {
               "Close to wildlife reserves and cultural sites"
             ]
           }
-        }
+        }]
       },
       revalidate: 600
     };
