@@ -33,14 +33,15 @@ const Header = () => {
       }`}
     >
       <div className="container mx-auto px-6 flex justify-between items-center">
-        <Link 
+              <Link 
           href="/" 
-          className={`text-2xl font-bold relative z-10 ${
-            scrolled ? 'text-blue-600' : 'text-white'
-          }`}
+          className="relative z-10"
         >
-          <span className={scrolled ? 'text-blue-600' : 'text-white'}>Jarong</span>
-          <span className={scrolled ? 'text-amber-500' : 'text-amber-400'}>Media</span>
+          <img 
+            src="/logo.svg" 
+            alt="JarongMedia LLC" 
+            className={`h-12 transition-all ${scrolled ? 'filter-none' : 'brightness-0 invert'}`}
+          />
         </Link>
         
         {/* Desktop Navigation */}

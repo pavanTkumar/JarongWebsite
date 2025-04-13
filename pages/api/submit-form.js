@@ -53,9 +53,9 @@ export default async function handler(req, res) {
           
           <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <h3 style="color: #1E3A8A; margin-top: 0;">Trip Details:</h3>
-            <p style="color: #374151;"><strong>Destination:</strong> ${formData.destination || formData.to || 'Not specified'}</p>
-            <p style="color: #374151;"><strong>Travel Date:</strong> ${formData.travelDate || formData.departureDate || 'Not specified'}</p>
-            <p style="color: #374151;"><strong>Travelers:</strong> ${formData.travelers || formData.passengers || '1'}</p>
+            <p style="color: #374151;"><strong>Destination:</strong> ${formData.destination || formData.to || formData.hotelLocation || 'Not specified'}</p>
+            <p style="color: #374151;"><strong>Travel Date:</strong> ${formData.travelDate || formData.departureDate || formData.checkIn || 'Not specified'}</p>
+            <p style="color: #374151;"><strong>Return Date:</strong> ${formData.returnDate || formData.checkOut || 'Not specified'}</p>
             ${formData.returnDate ? `<p style="color: #374151;"><strong>Return Date:</strong> ${formData.returnDate}</p>` : ''}
             ${formData.bookingType ? `<p style="color: #374151;"><strong>Booking Type:</strong> ${formData.bookingType}</p>` : ''}
             ${formData.specialRequests ? `<p style="color: #374151;"><strong>Special Requests:</strong> ${formData.specialRequests}</p>` : ''}
@@ -257,10 +257,10 @@ export default async function handler(req, res) {
               
               <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <h3 style="color: #1E3A8A; margin-top: 0;">Your Trip Information:</h3>
-                <p style="color: #374151;"><strong>Destination:</strong> ${formData.destination || formData.to || 'Not specified'}</p>
-                <p style="color: #374151;"><strong>Travel Date:</strong> ${formData.travelDate || formData.departureDate || 'Not specified'}</p>
-                <p style="color: #374151;"><strong>Travelers:</strong> ${formData.travelers || formData.passengers || '1'}</p>
-                ${formData.returnDate ? `<p style="color: #374151;"><strong>Return Date:</strong> ${formData.returnDate}</p>` : ''}
+                <p style="color: #374151;"><strong>Destination:</strong> ${formData.destination || formData.to || formData.hotelLocation || formData.from || 'Not specified'}</p>
+                <p style="color: #374151;"><strong>Travel Date:</strong> ${formData.travelDate || formData.departureDate || formData.checkIn || 'Not specified'}</p>
+                <p style="color: #374151;"><strong>Travelers:</strong> ${formData.travelers || formData.passengers || formData.guests || '1'}</p>
+                ${formData.returnDate || formData.checkOut ? `<p style="color: #374151;"><strong>Return Date:</strong> ${formData.returnDate || formData.checkOut}</p>` : ''}
                 <p style="color: #374151;"><strong>Booking Reference:</strong> ${requestId}</p>
               </div>
               

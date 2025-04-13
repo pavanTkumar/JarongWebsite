@@ -159,79 +159,90 @@ export default function PackageDetail({ packageData, similarPackages }) {
 
       {/* Package Details */}
       <section className="py-16 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Main Content */}
-            <div className="lg:col-span-2">
-              {/* Gallery */}
-              {galleryImages.length > 0 && (
-                <div className="mb-12">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Gallery</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {galleryImages.map((image, index) => (
-                      <div key={index} className="rounded-lg overflow-hidden h-48">
-                        <div 
-                          className="w-full h-full bg-cover bg-center"
-                          style={{ backgroundImage: `url(${image})` }}
-                        ></div>
-                      </div>
-                    ))}
-                  </div>
+  <div className="container mx-auto px-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      {/* Main Content */}
+      <div className="lg:col-span-2">
+        {/* Gallery */}
+        {galleryImages.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Gallery</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {galleryImages.map((image, index) => (
+                <div key={index} className="rounded-lg overflow-hidden h-48">
+                  <div 
+                    className="w-full h-full bg-cover bg-center"
+                    style={{ backgroundImage: `url(${image})` }}
+                  ></div>
                 </div>
-              )}
-
-              {/* Itinerary */}
-              {packageData.itinerary && packageData.itinerary.length > 0 && (
-                <div className="mb-12">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Itinerary</h2>
-                  <div className="space-y-6">
-                    {packageData.itinerary.map((day, index) => (
-                      <div key={index} className="bg-gray-50 p-6 rounded-lg">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{day.day}: {day.title}</h3>
-                        <p className="text-gray-600">{day.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Inclusions & Exclusions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                {/* Inclusions */}
-                {packageData.inclusions && packageData.inclusions.length > 0 && (
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Inclusions</h2>
-                    <ul className="space-y-2">
-                      {packageData.inclusions.map((item, index) => (
-                        <li key={index} className="flex items-start">
-                          <svg className="w-5 h-5 mt-1 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="text-gray-700">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Exclusions */}
-                {packageData.exclusions && packageData.exclusions.length > 0 && (
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Exclusions</h2>
-                    <ul className="space-y-2">
-                      {packageData.exclusions.map((item, index) => (
-                        <li key={index} className="flex items-start">
-                          <svg className="w-5 h-5 mt-1 mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          <span className="text-gray-700">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
+          </div>
+        )}
+
+        {/* Itinerary */}
+        {packageData.itinerary && packageData.itinerary.length > 0 && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Itinerary</h2>
+            <div className="space-y-6">
+              {packageData.itinerary.map((day, index) => (
+                <div key={index} className="bg-gray-50 p-6 rounded-lg">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{day.day}: {day.title}</h3>
+                  <p className="text-gray-600">{day.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* If no itinerary is available, show the description more prominently */}
+        {(!packageData.itinerary || packageData.itinerary.length === 0) && (
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Package Details</h2>
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <p className="text-gray-600 whitespace-pre-line">{packageData.description}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Inclusions & Exclusions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          {/* Inclusions */}
+          {packageData.inclusions && packageData.inclusions.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Inclusions</h2>
+              <ul className="space-y-2">
+                {packageData.inclusions.map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <svg className="w-5 h-5 mt-1 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-gray-700">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Exclusions */}
+          {packageData.exclusions && packageData.exclusions.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Exclusions</h2>
+              <ul className="space-y-2">
+                {packageData.exclusions.map((item, index) => (
+                  <li key={index} className="flex items-start">
+                    <svg className="w-5 h-5 mt-1 mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span className="text-gray-700">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
 
             {/* Sidebar - Booking Form */}
             <div className="lg:col-span-1">
