@@ -29,24 +29,51 @@ const Header = () => {
   return (
     <header 
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-white/95 backdrop-blur-md py-4 shadow-md' : 'bg-transparent py-6'
+        scrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-6 flex justify-between items-center">
-              <Link 
+      <div className="container mx-auto px-6 flex justify-between items-center h-20">
+        {/* Logo - SVG embedded directly */}
+        <Link 
           href="/" 
-          className="relative z-10"
+          className="relative z-10 flex items-center h-16"
         >
-          <img 
-            src="/logo.svg" 
-            alt="JarongMedia LLC" 
-            className={`h-12 transition-all ${scrolled ? 'filter-none' : 'brightness-0 invert'}`}
-          />
+          {scrolled ? (
+            // Color version for scrolled state
+            <svg width="280" height="60" viewBox="0 0 560 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Replace this with your actual SVG code for the color version */}
+              <path d="M10,40 Q70,20 140,30 Q200,37.5 260,37.5 Q320,37.5 380,30 L415,30 L430,22.5 L445,30 L460,22.5 L475,30 L490,22.5" 
+                    stroke="#F39C12" strokeWidth="6" fill="none"/>
+              <path d="M20,50 Q80,30 150,40 Q210,47.5 270,47.5 Q330,47.5 390,40 L425,40" 
+                    stroke="#E67E22" strokeWidth="5" fill="none"/>
+              
+              {/* Text: JARONG MEDIA LLC */}
+              <text x="220" y="80" fontFamily="Arial, sans-serif" fontSize="32" fontWeight="bold" fill="#E67E22" textAnchor="middle">JARONG MEDIA LLC</text>
+              
+              {/* Text: MARKETING AND TRAVEL SERVICES */}
+              <text x="220" y="100" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#F39C12" textAnchor="middle">MARKETING AND TRAVEL SERVICES</text>
+            </svg>
+          ) : (
+            // White version for transparent header
+            <svg width="280" height="60" viewBox="0 0 560 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Replace this with your actual SVG code for the white version */}
+              <path d="M10,40 Q70,20 140,30 Q200,37.5 260,37.5 Q320,37.5 380,30 L415,30 L430,22.5 L445,30 L460,22.5 L475,30 L490,22.5" 
+                    stroke="white" strokeWidth="6" fill="none"/>
+              <path d="M20,50 Q80,30 150,40 Q210,47.5 270,47.5 Q330,47.5 390,40 L425,40" 
+                    stroke="white" strokeWidth="5" fill="none"/>
+              
+              {/* Text: JARONG MEDIA LLC */}
+              <text x="220" y="80" fontFamily="Arial, sans-serif" fontSize="32" fontWeight="bold" fill="white" textAnchor="middle">JARONG MEDIA LLC</text>
+              
+              {/* Text: MARKETING AND TRAVEL SERVICES */}
+              <text x="220" y="100" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="bold" fill="white" textAnchor="middle">MARKETING AND TRAVEL SERVICES</text>
+            </svg>
+          )}
         </Link>
         
         {/* Desktop Navigation */}
         <nav className="hidden lg:block">
-          <ul className="flex space-x-10">
+          <ul className="flex space-x-8">
             {navItems.map((item) => (
               <li key={item.name}>
                 <Link 
@@ -66,7 +93,7 @@ const Header = () => {
         <div className="hidden lg:block">
           <Link 
             href="/booking"
-            className={`px-6 py-3 rounded-lg transition-all transform hover:translate-y-[-3px] hover:shadow-lg ${
+            className={`px-5 py-2.5 rounded-lg transition-all transform hover:translate-y-[-3px] hover:shadow-lg ${
               scrolled 
                 ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                 : 'bg-amber-500 hover:bg-amber-600 text-white'
@@ -80,6 +107,7 @@ const Header = () => {
         <button 
           className="lg:hidden relative z-10"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle mobile menu"
         >
           <div className="w-7 flex flex-col items-end space-y-1.5">
             <span className={`block h-0.5 rounded transition-all ${mobileMenuOpen ? 'w-6 rotate-45 translate-y-2' : 'w-6'} ${scrolled ? 'bg-gray-800' : 'bg-white'}`}></span>
