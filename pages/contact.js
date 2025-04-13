@@ -152,8 +152,8 @@ export default function Contact() {
               </p>
               <p className="text-gray-600">
                 <strong>Gambia Office:</strong><br />
-                456 Beach Road<br />
-                Banjul, The Gambia
+                Sukuta Highway,<br />
+                The Gambia
               </p>
             </motion.div>
             

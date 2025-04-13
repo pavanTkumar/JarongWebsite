@@ -36,7 +36,7 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            Curated travel experiences with a personal touch. From exotic Gambia getaways to worldwide adventures.
+            Welcome to our agency! We specialize in advertising and travel services. To learn more about our offerings, simply click on the relevant buttons on the top. Alternatively, you can find our contact information at the top right-hand corner and reach out to us via email or phone. We will respond to your inquiry promptly.
           </motion.p>
           
           <motion.div 

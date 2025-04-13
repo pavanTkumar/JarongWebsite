@@ -9,7 +9,7 @@ const Header = () => {
   const navItems = [
     { name: 'Home', path: '/' },
     { name: 'Travel Packages', path: '/packages' },
-    { name: 'Gambia Apartment', path: '/gambia-apartment' },
+    { name: 'The Lamsarr Apartments', path: '/gambia-apartment' },
     { name: 'Affiliate', path: '/affiliate' },
     { name: 'Media', path: '/media' },
     { name: 'About', path: '/about' },
